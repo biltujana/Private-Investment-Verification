@@ -15,9 +15,16 @@ export default function VerifyInvestorPage() {
   const [result, setResult] = useState<any>(null);
   const [verifyResult, setVerifyResult] = useState<any>(null);
   const [claimedCommitment, setClaimedCommitment] = useState("");
+  const [copied, setCopied] = useState(false);
   const [logs, setLogs] = useState<{ msg: string; type: string }[]>([]);
 
   const addLog = (msg: string, type = "info") => setLogs(l => [...l, { msg, type }]);
+
+  const handleCopyCommitment = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleVerifyInvestor = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,9 +143,30 @@ export default function VerifyInvestorPage() {
           </div>
 
           <div>
-            <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#94a3b8", display: "block", marginBottom: "0.5rem" }}>
-              Qualified Net Worth: <span style={{ color: "#10b981", fontWeight: 700 }}>${netWorthUsd.toLocaleString()} USD</span> {netWorthUsd >= 1000000 ? "(✅ Accredited Investor Qualified)" : "(⚠️ Below $1M Threshold)"}
-            </label>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem", flexWrap: "wrap", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#94a3b8" }}>
+                Qualified Net Worth: <span style={{ color: "#10b981", fontWeight: 700 }}>${netWorthUsd.toLocaleString()} USD</span> {netWorthUsd >= 1000000 ? "(✅ Accredited Investor)" : "(⚠️ Below Threshold)"}
+              </label>
+              {/* Quick Presets */}
+              <div style={{ display: "flex", gap: "0.35rem" }}>
+                {[
+                  { label: "$1M", val: 1000000 },
+                  { label: "$2.5M", val: 2500000 },
+                  { label: "$5M", val: 5000000 },
+                  { label: "$10M", val: 10000000 }
+                ].map(p => (
+                  <button
+                    key={p.label}
+                    type="button"
+                    onClick={() => setNetWorthUsd(p.val)}
+                    className="badge badge-sapphire"
+                    style={{ cursor: "pointer", border: netWorthUsd === p.val ? "1px solid #3b82f6" : "1px solid rgba(59, 130, 246, 0.2)" }}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <input
               type="range"
               min={500000}
@@ -204,8 +232,18 @@ export default function VerifyInvestorPage() {
       {/* ── Submission Result Card ── */}
       {result && (
         <div className="glass-card fade-in" style={{ padding: "1.75rem", marginBottom: "2rem", border: "1px solid rgba(59, 130, 246, 0.4)", background: "rgba(59, 130, 246, 0.04)" }}>
-          <div style={{ color: "#3b82f6", fontWeight: 700, fontSize: "1.1rem", marginBottom: "1rem" }}>
-            ✅ ZK Investor Accreditation Successfully Anchored On-Chain
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
+            <div style={{ color: "#3b82f6", fontWeight: 700, fontSize: "1.1rem" }}>
+              ✅ ZK Investor Accreditation Successfully Anchored On-Chain
+            </div>
+            <button
+              type="button"
+              onClick={() => handleCopyCommitment(result.commitmentHex)}
+              className="btn-secondary"
+              style={{ fontSize: "0.78rem", padding: "0.3rem 0.8rem" }}
+            >
+              {copied ? "✓ Copied!" : "📋 Copy Commitment"}
+            </button>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
