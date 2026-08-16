@@ -2,6 +2,7 @@
 > A privacy-preserving zero-knowledge accredited investor verification & private placement capital commitment dApp built on the Midnight Network using Compact smart contracts.
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Private--Investment--Verification-181717?style=flat-square&logo=github)](https://github.com/biltujana/Private-Investment-Verification)
+[![YouTube Demo](https://img.shields.io/badge/YouTube-Live_Demo_Video-FF0000?style=flat-square&logo=youtube)](https://youtu.be/9Ls_3S7IMrc)
 [![Vercel Deployment](https://img.shields.io/badge/Vercel-private--investment--verification.vercel.app-000000?style=flat-square&logo=vercel)](https://private-investment-verification.vercel.app/)
 [![CI/CD Pipeline](https://github.com/biltujana/Private-Investment-Verification/actions/workflows/ci.yml/badge.svg)](https://github.com/biltujana/Private-Investment-Verification/actions/workflows/ci.yml)
 [![Midnight Network](https://img.shields.io/badge/Network-Midnight_Preview-8b5cf6?style=flat-square)](https://preview.midnightexplorer.com/contracts/0x5292a220155624990f23cff1d979fe66137264e240982a2a32901b8060951d6a)
@@ -20,11 +21,20 @@
 
 ---
 
+## 🎥 Live Demo Video
+
+[![PIV Video Walkthrough](https://img.shields.io/badge/YouTube-Watch%20Live%20Demo%20Video-FF0000?style=for-the-badge&logo=youtube)](https://youtu.be/9Ls_3S7IMrc)
+
+📺 **Watch on YouTube**: [https://youtu.be/9Ls_3S7IMrc](https://youtu.be/9Ls_3S7IMrc)
+
+---
+
 ## 🏗️ Repository & Deployment
 
 - 📄 **Project Proposal**: [PROPOSAL.md](PROPOSAL.md)
 - 📦 **GitHub Repository**: [https://github.com/biltujana/Private-Investment-Verification](https://github.com/biltujana/Private-Investment-Verification)
 - 🚀 **Vercel Live Demo**: [https://private-investment-verification.vercel.app/](https://private-investment-verification.vercel.app/)
+- 🎥 **YouTube Video Walkthrough**: [https://youtu.be/9Ls_3S7IMrc](https://youtu.be/9Ls_3S7IMrc)
 - ⚙️ **CI/CD Workflow**: [.github/workflows/ci.yml](.github/workflows/ci.yml)
 - 🌐 **Midnight Explorer**: [https://preview.midnightexplorer.com/contracts/0x5292a220155624990f23cff1d979fe66137264e240982a2a32901b8060951d6a](https://preview.midnightexplorer.com/contracts/0x5292a220155624990f23cff1d979fe66137264e240982a2a32901b8060951d6a)
 - 📡 **Network**: Midnight Preview Testnet
@@ -39,19 +49,19 @@
 ## 📸 Platform Screenshots & Verification
 
 ### 1. Main Dashboard & ZK Contract Architecture
-![PIV Main Dashboard](photos/dashboard_main.png)
+![PIV Main Dashboard](photos/dashboard_main_web.png)
 
 ### 2. Accredited Investor Verification & ZK Proof Portal
-![Accreditation Portal](photos/exam_submit.png)
+![Accreditation Portal](photos/inverstor-portal.png)
 
 ### 3. Fund Manager Admin Console & Deal Management
-![Fund Manager Console](photos/admin_side.png)
+![Fund Manager Console](photos/admin_side_main.png)
 
 ### 4. Mobile Responsive UI & Lace Wallet Connector
-![Mobile Responsive UI](photos/ui_mobile.png)
+![Mobile Responsive UI](photos/mobile-ui-ux.png)
 
 ### 5. On-Chain Execution & Vitest Test Verification Log (10/10)
-![Vitest Test Verification Log](photos/test_run.png)
+![Vitest Test Verification Log](photos/test-run-pr.png)
 
 ---
 
@@ -200,3 +210,4 @@ export circuit incrementSession(): [] {
 - [x] **Browser Proof Generation**: Client-side ZK proof generation and Midnight Lace wallet connector.
 - [x] **On-Chain Midnight Preview Deployment**: [Midnight Explorer](https://preview.midnightexplorer.com/contracts/0x5292a220155624990f23cff1d979fe66137264e240982a2a32901b8060951d6a).
 - [x] **Live Vercel Demo**: [https://private-investment-verification.vercel.app/](https://private-investment-verification.vercel.app/).
+- [x] **YouTube Live Demo Walkthrough**: [https://youtu.be/9Ls_3S7IMrc](https://youtu.be/9Ls_3S7IMrc).
