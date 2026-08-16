@@ -46,6 +46,35 @@
 
 ---
 
+## 🏛️ Zero-Knowledge Architecture Flow
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                    CLIENT BROWSER (PRIVATE)                 │
+│                                                             │
+│  [Investor Key]    [CPA Audit Hash]    [Net Worth >= $1M]   │
+│         │                  │                    │           │
+│         └───────────┬──────┴────────────────────┘           │
+│                     ▼                                       │
+│          ┌──────────────────────┐                           │
+│          │  Compact ZK Prover   │                           │
+│          │  (Local Execution)   │                           │
+│          └──────────┬───────────┘                           │
+└─────────────────────┼───────────────────────────────────────┘
+                      │
+                      │  Discloses ONLY 32-Byte Commitment Hash
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│             MIDNIGHT PREVIEW LEDGER (PUBLIC)                │
+│                                                             │
+│  • verifiedCount: Counter         • fundId: Bytes<32>       │
+│  • lastVerificationCommitment     • minimumThreshold: $1M   │
+│  • fundManagerCommitment          • activeSession: Counter  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## 📸 Platform Screenshots & Verification
 
 ### 1. Main Dashboard & ZK Contract Architecture
@@ -189,6 +218,28 @@ export circuit resetInvestmentFund(newFundId: Bytes<32>, newMinimumThreshold: Ui
 export circuit incrementSession(): [] {
   activeSession.increment(1);
 }
+```
+
+---
+
+## ⚡ Quick Start & Local Reproduction
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/biltujana/Private-Investment-Verification.git
+cd Private-Investment-Verification
+
+# 2. Install dependencies
+npm install
+
+# 3. Run the Vitest unit test suite (10/10 passing)
+npm test
+
+# 4. Run the Next.js production build
+npm run build
+
+# 5. Start the local development server
+npm run dev
 ```
 
 ---
