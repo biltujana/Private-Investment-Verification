@@ -2,7 +2,7 @@
 > A privacy-preserving zero-knowledge accredited investor verification and capital commitment dApp built on the Midnight Network using Compact smart contracts and Midnight.js SDK.
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Private--Investment--Verification-181717?style=flat-square&logo=github)](https://github.com/biltujana/Private-Investment-Verification)
-[![YouTube Demo](https://img.shields.io/badge/YouTube-Live_Demo_Video-FF0000?style=flat-square&logo=youtube)](https://youtu.be/9Ls_3S7IMrc)
+[![YouTube Demo](https://img.shields.io/badge/YouTube-Live_Demo_Video-FF0000?style=flat-square&logo=youtube)](https://youtu.be/V6r9VZ2xhIM)
 [![CI/CD Pipeline](https://github.com/biltujana/Private-Investment-Verification/actions/workflows/ci.yml/badge.svg)](https://github.com/biltujana/Private-Investment-Verification/actions/workflows/ci.yml)
 [![Midnight Network](https://img.shields.io/badge/Network-Midnight_Preview-8b5cf6?style=flat-square)](https://preview.midnightexplorer.com/contracts/0x5292a220155624990f23cff1d979fe66137264e240982a2a32901b8060951d6a)
 [![Midnight.js SDK](https://img.shields.io/badge/Midnight.js-SDK_Integrated-3b82f6?style=flat-square)](https://midnight.network)
@@ -25,9 +25,9 @@ High-net-worth individuals and institutional allocators prove SEC/regulatory acc
 
 ## 🎥 Live Demo Video
 
-[![PIV Video Walkthrough](https://img.shields.io/badge/YouTube-Watch%20Live%20Demo%20Video-FF0000?style=for-the-badge&logo=youtube)](https://youtu.be/9Ls_3S7IMrc)
+[![PIV Video Walkthrough](https://img.shields.io/badge/YouTube-Watch%20Live%20Demo%20Video-FF0000?style=for-the-badge&logo=youtube)](https://youtu.be/V6r9VZ2xhIM)
 
-📺 **Watch on YouTube**: [https://youtu.be/9Ls_3S7IMrc](https://youtu.be/9Ls_3S7IMrc)
+📺 **Watch on YouTube**: [https://youtu.be/V6r9VZ2xhIM](https://youtu.be/V6r9VZ2xhIM)
 
 ---
 
@@ -35,7 +35,7 @@ High-net-worth individuals and institutional allocators prove SEC/regulatory acc
 
 - 📄 **Project Proposal**: [PROPOSAL.md](PROPOSAL.md)
 - 📦 **GitHub Repository**: [https://github.com/biltujana/Private-Investment-Verification](https://github.com/biltujana/Private-Investment-Verification)
-- 🎥 **YouTube Video Walkthrough**: [https://youtu.be/9Ls_3S7IMrc](https://youtu.be/9Ls_3S7IMrc)
+- 🎥 **YouTube Video Walkthrough**: [https://youtu.be/V6r9VZ2xhIM](https://youtu.be/V6r9VZ2xhIM)
 - ⚙️ **CI/CD Workflow**: [.github/workflows/ci.yml](.github/workflows/ci.yml)
 - 🌐 **Midnight Explorer**: [https://preview.midnightexplorer.com/contracts/0x5292a220155624990f23cff1d979fe66137264e240982a2a32901b8060951d6a](https://preview.midnightexplorer.com/contracts/0x5292a220155624990f23cff1d979fe66137264e240982a2a32901b8060951d6a)
 - 📡 **Network**: Midnight Preview Testnet
@@ -222,4 +222,4 @@ export circuit incrementSession(): [] {
 - [x] **Interactive Next.js 14 Web UI**: App Router dApp with ZK net worth sliders, investor portal, fund manager console, and inspector.
 - [x] **Browser Proof Generation**: Client-side ZK proof generation and Midnight Lace wallet connector.
 - [x] **On-Chain Midnight Preview Deployment**: [Midnight Explorer](https://preview.midnightexplorer.com/contracts/0x5292a220155624990f23cff1d979fe66137264e240982a2a32901b8060951d6a).
-- [x] **YouTube Live Demo Walkthrough**: [https://youtu.be/9Ls_3S7IMrc](https://youtu.be/9Ls_3S7IMrc).
+- [x] **YouTube Live Demo Walkthrough**: [https://youtu.be/V6r9VZ2xhIM](https://youtu.be/V6r9VZ2xhIM).
