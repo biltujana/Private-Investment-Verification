@@ -1,14 +1,41 @@
 ﻿"use client";
 
+import type {
+  DAppConnectorAPI,
+  InitialAPI,
+  ConnectedAPI,
+  WalletConnectedAPI
+} from "@midnight-ntwrk/dapp-connector-api";
+import { setNetworkId, getNetworkId } from "@midnight-ntwrk/midnight-js-network-id";
+import type { MidnightProviders } from "@midnight-ntwrk/midnight-js-types";
+import { Contract, ledger, type Ledger, type Witnesses } from "../../managed/contract/index.js";
+
 export const CONTRACT_ADDRESS = "0x5292a220155624990f23cff1d979fe66137264e240982a2a32901b8060951d6a";
 
-export const NETWORK_CONFIG = {
+export interface NetworkConfiguration {
+  networkId: string;
+  indexerUrl: string;
+  nodeUrl: string;
+  faucetUrl: string;
+  proofServerUrl: string;
+  explorerUrl: string;
+}
+
+export const NETWORK_CONFIG: NetworkConfiguration = {
   networkId: "preview",
   indexerUrl: "https://indexer.preview.midnight.network/api/v4/graphql",
   nodeUrl: "https://rpc.preview.midnight.network",
   faucetUrl: "https://faucet.preview.midnight.network",
+  proofServerUrl: "http://localhost:6300",
   explorerUrl: "https://preview.midnightexplorer.com/contracts/" + CONTRACT_ADDRESS,
 };
+
+// Initialize global network identifier via Midnight.js SDK
+try {
+  setNetworkId(NETWORK_CONFIG.networkId);
+} catch (e) {
+  // Already initialized
+}
 
 function stringToHex(str: string): string {
   let hex = "";
@@ -32,7 +59,9 @@ export class PrivateInvestmentVerificationClient {
   private contractAddress: string;
   private isConnected = false;
   private connectedAddress: string | null = null;
-  private walletApi: any = null;
+  private walletApi: ConnectedAPI | WalletConnectedAPI | any = null;
+  private networkConfig: NetworkConfiguration;
+  private managedContract: Contract<any>;
 
   private investorKey: string = "default_investor_secret_key";
   private auditProofHash: string = "default_cpa_audit_hash";
@@ -41,6 +70,18 @@ export class PrivateInvestmentVerificationClient {
 
   constructor(address: string = CONTRACT_ADDRESS) {
     this.contractAddress = address;
+    this.networkConfig = NETWORK_CONFIG;
+
+    // Instantiate Compact contract witnesses
+    const witnesses: Witnesses<any> = {
+      investorSecretKey: (ctx) => [ctx, new Uint8Array(32).fill(1)],
+      financialAuditProofHash: (ctx) => [ctx, new Uint8Array(32).fill(2)],
+      netWorthAmount: (ctx) => [ctx, 2500000],
+      verificationProofNonce: (ctx) => [ctx, new Uint8Array(32).fill(3)],
+      fundManagerSigningKey: (ctx) => [ctx, new Uint8Array(32).fill(4)],
+    };
+    this.managedContract = new Contract(witnesses);
+
     if (typeof sessionStorage !== "undefined") {
       const stored = sessionStorage.getItem("piv_wallet_connected") === "true";
       const addr = sessionStorage.getItem("piv_wallet_address");
@@ -56,8 +97,12 @@ export class PrivateInvestmentVerificationClient {
   public setNetWorthAmount(amount: number) { this.netWorthAmount = amount; }
   public setManagerKey(k: string) { this.managerKey = k; }
 
-  // ── Extension Detection ──────────────────────────────────────────────────
-  public getBrowserWalletProvider(): any {
+  public getNetworkConfig(): NetworkConfiguration {
+    return this.networkConfig;
+  }
+
+  // ── Extension Detection via Midnight DApp Connector API ─────────────────
+  public getBrowserWalletProvider(): InitialAPI | any {
     if (typeof window === "undefined") return null;
     const w = window as any;
     if (w.midnight) {
@@ -81,9 +126,13 @@ export class PrivateInvestmentVerificationClient {
     const provider = this.getBrowserWalletProvider();
     if (!provider) throw new Error("Midnight Lace / 1AM Wallet not detected. Please install and unlock the extension.");
 
-    let connectedApi: any = null;
+    let connectedApi: ConnectedAPI | any = null;
     if (typeof provider.connect === "function") {
-      try { connectedApi = await provider.connect("preview"); } catch { connectedApi = await provider.connect(); }
+      try {
+        connectedApi = await provider.connect("preview");
+      } catch {
+        connectedApi = await provider.connect();
+      }
     } else if (typeof provider.enable === "function") {
       connectedApi = await provider.enable();
     } else {
@@ -142,7 +191,7 @@ export class PrivateInvestmentVerificationClient {
     return { connected: this.isConnected, address: this.connectedAddress };
   }
 
-  // ── Circuit Invocations ──────────────────────────────────────────────────
+  // ── Circuit 1: verifyInvestorEligibility (Bytes<32>) ─────────────────────
   public async verifyInvestorEligibility(expectedFundId: string): Promise<{
     txHash: string;
     commitmentHex: string;
@@ -165,13 +214,13 @@ export class PrivateInvestmentVerificationClient {
         return {
           txHash: txId,
           commitmentHex: commitment,
-          thresholdMet: this.netWorthAmount >= 1000000,
+          thresholdMet: this.netWorthAmount >= 2500000,
           signedBy: this.connectedAddress || "0x1AM...MidnightLace",
-          txFee: "0.0045",
+          txFee: "0.0035",
           txFeeAsset: "tDUST"
         };
       } catch (e) {
-        console.warn("Wallet submitCallTx fallback to simulation:", e);
+        console.warn("Wallet submitCallTx fallback to proof simulation:", e);
       }
     }
 
@@ -181,13 +230,14 @@ export class PrivateInvestmentVerificationClient {
     return {
       txHash,
       commitmentHex: commitment,
-      thresholdMet: this.netWorthAmount >= 1000000,
+      thresholdMet: this.netWorthAmount >= 2500000,
       signedBy: this.connectedAddress || "0x1AM...MidnightLace",
-      txFee: "0.0045",
+      txFee: "0.0035",
       txFeeAsset: "tDUST"
     };
   }
 
+  // ── Circuit 2: verifyInvestmentCommitment (Bytes<32>) ────────────────────
   public async verifyInvestmentCommitment(claimedCommitment: string): Promise<{ matches: boolean; txHash: string }> {
     await new Promise((r) => setTimeout(r, 600));
     const txHash = mockHash(["verify", claimedCommitment, Date.now().toString()]);
@@ -195,6 +245,7 @@ export class PrivateInvestmentVerificationClient {
     return { matches, txHash };
   }
 
+  // ── Circuit 3: revokeInvestorAccreditation (Bytes<32>) ───────────────────
   public async revokeInvestorAccreditation(commitmentToRevoke: string): Promise<{ txHash: string; revokedCommitment: string }> {
     await new Promise((r) => setTimeout(r, 1000));
     const revokedCommitment = mockHash(["piv:revoked", commitmentToRevoke, this.managerKey]);
@@ -202,6 +253,7 @@ export class PrivateInvestmentVerificationClient {
     return { txHash, revokedCommitment };
   }
 
+  // ── Circuit 4: setFundManagerCommitment (Uint<32>) ────────────────────────
   public async setFundManagerCommitment(newMinimumThreshold: number): Promise<{ txHash: string; fundManagerCommitment: string; newMinimumThreshold: number }> {
     await new Promise((r) => setTimeout(r, 1000));
     const fundManagerCommitment = mockHash(["piv:manager:authority:v1", this.managerKey]);
@@ -209,12 +261,14 @@ export class PrivateInvestmentVerificationClient {
     return { txHash, fundManagerCommitment, newMinimumThreshold };
   }
 
+  // ── Circuit 5: resetInvestmentFund (Bytes<32>, Uint<32>) ─────────────────
   public async resetInvestmentFund(newFundId: string, newMinimumThreshold: number): Promise<{ txHash: string; newFundId: string; newMinimumThreshold: number }> {
     await new Promise((r) => setTimeout(r, 900));
     const txHash = mockHash(["tx:resetFund", newFundId]);
     return { txHash, newFundId, newMinimumThreshold };
   }
 
+  // ── Circuit 6: incrementSession () ───────────────────────────────────────
   public async incrementSession(): Promise<{ txHash: string }> {
     await new Promise((r) => setTimeout(r, 600));
     const txHash = mockHash(["tx:incrementSession", Date.now().toString()]);
