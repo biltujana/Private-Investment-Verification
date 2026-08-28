@@ -1,4 +1,4 @@
-﻿name: CI/CD Pipeline — Private Investment Verification
+name: CI/CD Pipeline — Private Investment Verification
 
 on:
   push:
