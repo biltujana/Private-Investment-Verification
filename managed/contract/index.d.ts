@@ -1,4 +1,4 @@
-﻿import * as __compactRuntime from "@midnight-ntwrk/compact-runtime";
+﻿import type * as __compactRuntime from "@midnight-ntwrk/compact-runtime";
 
 export enum StateValue {
   vacant = 0,
