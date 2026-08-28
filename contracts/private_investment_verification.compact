@@ -1,8 +1,18 @@
-﻿pragma language_version 0.23;
+﻿// ============================================================================
+// PRIVATE INVESTMENT VERIFICATION (PIV) CONTRACT — MIDNIGHT NETWORK
+// ============================================================================
+// Privacy-Preserving Zero-Knowledge Accredited Investor Verification.
+// Multi-Witness Accreditation Attestation with Private Financial Audits,
+// Net Worth Threshold Boundary Enforcement in ZK, and Fund Manager Authority.
+// Deployed Address: 0x5292a220155624990f23cff1d979fe66137264e240982a2a32901b8060951d6a
+// Network Target: Midnight Preview Testnet
+// ============================================================================
+
+pragma language_version 0.23;
 
 import CompactStandardLibrary;
 
-// ── Ledger State (8 Public On-Chain Fields) ──────────────────────────────────
+// ── Public Ledger State (8 Public On-Chain Fields) ───────────────────────────
 export ledger verifiedCount: Counter;
 export ledger revokedCount: Counter;
 export ledger activeSession: Counter;
@@ -12,7 +22,7 @@ export ledger lastVerificationCommitment: Bytes<32>;
 export ledger lastRevokedCommitment: Bytes<32>;
 export ledger minimumNetWorthThreshold: Uint<32>;
 
-// ── Private Witnesses (5 — Never Disclosed On-Chain) ──────────────────────────
+// ── Private Witnesses (Computed locally inside investor & manager browsers) ──
 witness investorSecretKey(): Bytes<32>;
 witness financialAuditProofHash(): Bytes<32>;
 witness netWorthAmount(): Uint<32>;
@@ -20,7 +30,6 @@ witness verificationProofNonce(): Bytes<32>;
 witness fundManagerSigningKey(): Bytes<32>;
 
 // ── Circuit 1: verifyInvestorEligibility — ZK Accredited Investor Proof ──────
-// Proves accredited investor status & net worth threshold without revealing identity or bank balance
 export circuit verifyInvestorEligibility(expectedFundId: Bytes<32>): Bytes<32> {
   assert(fundId == expectedFundId, "Investment Fund ID mismatch");
 
@@ -29,7 +38,7 @@ export circuit verifyInvestorEligibility(expectedFundId: Bytes<32>): Bytes<32> {
   const auditHash = financialAuditProofHash();
   const netWorth = netWorthAmount();
 
-  // Enforce accredited investor net worth threshold in zero-knowledge
+  // Enforce accredited investor net worth threshold in zero-knowledge (e.g. >= $2,500,000)
   assert(netWorth >= minimumNetWorthThreshold, "Investor net worth below minimum accreditation threshold");
 
   // Cryptographic binding commitment
@@ -52,7 +61,6 @@ export circuit verifyInvestmentCommitment(claimedCommitment: Bytes<32>): Boolean
 }
 
 // ── Circuit 3: revokeInvestorAccreditation — Fund Manager Disqualification ────
-// Requires fundManagerSigningKey() witness to prove authorized fund manager authority
 export circuit revokeInvestorAccreditation(commitmentToRevoke: Bytes<32>): Bytes<32> {
   const managerKey = fundManagerSigningKey();
   const expectedAuth = persistentHash<Vector<2, Bytes<32>>>([
@@ -85,7 +93,7 @@ export circuit resetInvestmentFund(newFundId: Bytes<32>, newMinimumThreshold: Ui
   return fundId;
 }
 
-// ── Circuit 6: incrementSession — Nonce Rotation for Replay Protection ──────
+// ── Circuit 6: incrementSession — Nonce Rotation for Replay Protection ───────
 export circuit incrementSession(): [] {
   activeSession.increment(1);
 }
