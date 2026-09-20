@@ -1,5 +1,5 @@
 ﻿// ============================================================================
-// PRIVATE INVESTMENT VERIFICATION (PIV) CONTRACT - MIDNIGHT NETWORK
+// PRIVATE INVESTMENT VERIFICATION (PIV) CONTRACT — MIDNIGHT NETWORK
 // ============================================================================
 // Privacy-Preserving Zero-Knowledge Accredited Investor Verification.
 // Multi-Witness Accreditation Attestation with Private Financial Audits,
@@ -12,7 +12,7 @@ pragma language_version 0.23;
 
 import CompactStandardLibrary;
 
-// ── Public Ledger State (8 Public On-Chain Fields) ──
+// ── Public Ledger State (8 Public On-Chain Fields) ───────────────────────────
 export ledger verifiedCount: Counter;
 export ledger revokedCount: Counter;
 export ledger activeSession: Counter;
@@ -29,25 +29,25 @@ witness netWorthAmount(): Uint<32>;
 witness verificationProofNonce(): Bytes<32>;
 witness fundManagerSigningKey(): Bytes<32>;
 
-// ── Circuit 1: verifyInvestorEligibility - ZK Accredited Investor Proof ──
+// ── Circuit 1: verifyInvestorEligibility — ZK Accredited Investor Proof ──────
 export circuit verifyInvestorEligibility(expectedFundId: Bytes<32>): Bytes<32> {
-  assert(fundId == expectedFundId, Investment Fund ID mismatch);
+  assert(fundId == expectedFundId, "Investment Fund ID mismatch");
 
   const investorKey = investorSecretKey();
   const nonce = verificationProofNonce();
   const auditHash = financialAuditProofHash();
   const netWorth = netWorthAmount();
 
-  // Enforce accredited investor net worth threshold in zero-knowledge (e.g. >= ,500,000)
-  assert(netWorth >= minimumNetWorthThreshold, Investor net worth below minimum accreditation threshold);
+  // Enforce accredited investor net worth threshold in zero-knowledge (e.g. >= $2,500,000)
+  assert(netWorth >= minimumNetWorthThreshold, "Investor net worth below minimum accreditation threshold");
 
   // Cryptographic binding commitment
   const commitment = persistentHash<Vector<5, Bytes<32>>>([
-    pad(32, piv:investor:v2),
+    pad(32, "piv:investor:v2"),
     investorKey,
     nonce,
     auditHash,
-    pad(32, piv:session:binding)
+    pad(32, "piv:session:binding")
   ]);
 
   verifiedCount.increment(1);
@@ -55,29 +55,29 @@ export circuit verifyInvestorEligibility(expectedFundId: Bytes<32>): Bytes<32> {
   return lastVerificationCommitment;
 }
 
-// ── Circuit 2: verifyInvestmentCommitment - Public On-Chain Verification ──
+// ── Circuit 2: verifyInvestmentCommitment — Public On-Chain Verification ─────
 export circuit verifyInvestmentCommitment(claimedCommitment: Bytes<32>): Boolean {
   return disclose(lastVerificationCommitment == claimedCommitment);
 }
 
-// ── Circuit 3: revokeInvestorAccreditation - Fund Manager Disqualification ──
+// ── Circuit 3: revokeInvestorAccreditation — Fund Manager Disqualification ────
 export circuit revokeInvestorAccreditation(commitmentToRevoke: Bytes<32>): Bytes<32> {
   const managerKey = fundManagerSigningKey();
   const expectedAuth = persistentHash<Vector<2, Bytes<32>>>([
-    pad(32, piv:manager:authority:v1),
+    pad(32, "piv:manager:authority:v1"),
     managerKey
   ]);
-  assert(expectedAuth == fundManagerCommitment, Unauthorized fund manager operation);
+  assert(expectedAuth == fundManagerCommitment, "Unauthorized fund manager operation");
 
   revokedCount.increment(1);
   lastRevokedCommitment = disclose(commitmentToRevoke);
   return lastRevokedCommitment;
 }
 
-// ── Circuit 4: setFundManagerCommitment - Anchor Manager Authority & Threshold ──
+// ── Circuit 4: setFundManagerCommitment — Anchor Manager Authority & Threshold
 export circuit setFundManagerCommitment(newMinimumThreshold: Uint<32>): Bytes<32> {
   fundManagerCommitment = disclose(persistentHash<Vector<2, Bytes<32>>>([
-    pad(32, piv:manager:authority:v1),
+    pad(32, "piv:manager:authority:v1"),
     fundManagerSigningKey()
   ]));
   minimumNetWorthThreshold = newMinimumThreshold;
@@ -85,7 +85,7 @@ export circuit setFundManagerCommitment(newMinimumThreshold: Uint<32>): Bytes<32
   return fundManagerCommitment;
 }
 
-// ── Circuit 5: resetInvestmentFund - Rotate Fund Offering & Update Threshold ──
+// ── Circuit 5: resetInvestmentFund — Rotate Fund Offering & Update Threshold ──
 export circuit resetInvestmentFund(newFundId: Bytes<32>, newMinimumThreshold: Uint<32>): Bytes<32> {
   fundId = disclose(newFundId);
   minimumNetWorthThreshold = newMinimumThreshold;
@@ -93,7 +93,7 @@ export circuit resetInvestmentFund(newFundId: Bytes<32>, newMinimumThreshold: Ui
   return fundId;
 }
 
-// ── Circuit 6: incrementSession - Nonce Rotation for Replay Protection ──
+// ── Circuit 6: incrementSession — Nonce Rotation for Replay Protection ───────
 export circuit incrementSession(): [] {
   activeSession.increment(1);
 }
