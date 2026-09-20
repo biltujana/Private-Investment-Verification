@@ -59,16 +59,19 @@ The Next.js 14 frontend is seamlessly connected to the on-chain Compact smart co
 ## 📸 Platform Screenshots & Verification
 
 ### 1. Main Dashboard & ZK Contract Architecture
-![PIV Main Dashboard](photos/dashboard.png)
+![PIV Main Dashboard](photos/dashboard_main_web.png)
 
 ### 2. Investor Accreditation & ZK Proof Portal
-![Investor Portal](photos/verify.png)
+![Investor Portal](photos/inverstor-portal.png)
 
-### 3. Mobile Responsive UI & Lace Wallet Connector
-![Mobile Responsive UI](photos/mobile_ui.png)
+### 3. Fund Manager Governance Console
+![Fund Manager Console](photos/admin_side_main.png)
 
-### 4. Vitest Unit Test Verification Suite (10/10 Passing)
-![Vitest Unit Tests](photos/run_test.png)
+### 4. Mobile Responsive UI & Lace Wallet Connector
+![Mobile Responsive UI](photos/mobile-ui-ux.png)
+
+### 5. Vitest Unit Test Verification Suite (14/14 Passing)
+![Vitest Unit Tests](photos/test-run-pr.png)
 
 ---
 
