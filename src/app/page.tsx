@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: 'Prove accredited investor net worth qualifications and commit private capital using zero-knowledge proofs on the Midnight Network.',
 };
 
-const CONTRACT_ADDRESS = "0x5292a220155624990f23cff1d979fe66137264e240982a2a32901b8060951d6a";
+const CONTRACT_ADDRESS = "0x443a1a8b3dfcca0bc809e15fbee0160bfc3e9eb375cfee4f8383b8a3b2fcbaa2";
 
 export default function HomePage() {
   return (

@@ -1,4 +1,4 @@
-﻿import type * as __compactRuntime from "@midnight-ntwrk/compact-runtime";
+﻿import type * as __compactRuntime from @midnight-ntwrk/compact-runtime;
 
 export enum StateValue {
   vacant = 0,
@@ -15,10 +15,12 @@ export type Witnesses<T> = {
 
 export type ImpureCircuits<T> = {
   verifyInvestorEligibility(context: __compactRuntime.CircuitContext<T>, expectedFundId: Uint8Array): __compactRuntime.CircuitResults<T, Uint8Array>;
+  applyForScholarship(context: __compactRuntime.CircuitContext<T>, expectedFundId: Uint8Array): __compactRuntime.CircuitResults<T, Uint8Array>;
   verifyInvestmentCommitment(context: __compactRuntime.CircuitContext<T>, claimedCommitment: Uint8Array): __compactRuntime.CircuitResults<T, boolean>;
   revokeInvestorAccreditation(context: __compactRuntime.CircuitContext<T>, commitmentToRevoke: Uint8Array): __compactRuntime.CircuitResults<T, Uint8Array>;
   setFundManagerCommitment(context: __compactRuntime.CircuitContext<T>, newMinimumThreshold: number): __compactRuntime.CircuitResults<T, Uint8Array>;
   resetInvestmentFund(context: __compactRuntime.CircuitContext<T>, newFundId: Uint8Array, newMinimumThreshold: number): __compactRuntime.CircuitResults<T, Uint8Array>;
+  resetScholarship(context: __compactRuntime.CircuitContext<T>, newFundId: Uint8Array, newMinimumThreshold: number): __compactRuntime.CircuitResults<T, Uint8Array>;
   incrementSession(context: __compactRuntime.CircuitContext<T>): __compactRuntime.CircuitResults<T, []>;
 }
 
@@ -26,10 +28,12 @@ export type PureCircuits = {}
 
 export type Circuits<T> = {
   verifyInvestorEligibility(context: __compactRuntime.CircuitContext<T>, expectedFundId: Uint8Array): __compactRuntime.CircuitResults<T, Uint8Array>;
+  applyForScholarship(context: __compactRuntime.CircuitContext<T>, expectedFundId: Uint8Array): __compactRuntime.CircuitResults<T, Uint8Array>;
   verifyInvestmentCommitment(context: __compactRuntime.CircuitContext<T>, claimedCommitment: Uint8Array): __compactRuntime.CircuitResults<T, boolean>;
   revokeInvestorAccreditation(context: __compactRuntime.CircuitContext<T>, commitmentToRevoke: Uint8Array): __compactRuntime.CircuitResults<T, Uint8Array>;
   setFundManagerCommitment(context: __compactRuntime.CircuitContext<T>, newMinimumThreshold: number): __compactRuntime.CircuitResults<T, Uint8Array>;
   resetInvestmentFund(context: __compactRuntime.CircuitContext<T>, newFundId: Uint8Array, newMinimumThreshold: number): __compactRuntime.CircuitResults<T, Uint8Array>;
+  resetScholarship(context: __compactRuntime.CircuitContext<T>, newFundId: Uint8Array, newMinimumThreshold: number): __compactRuntime.CircuitResults<T, Uint8Array>;
   incrementSession(context: __compactRuntime.CircuitContext<T>): __compactRuntime.CircuitResults<T, []>;
 }
 

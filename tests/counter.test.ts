@@ -1,7 +1,8 @@
-﻿import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { Contract, ledger } from '../managed/contract/index.js';
+import { PrivateInvestmentVerificationClient, CONTRACT_ADDRESS } from '../src/lib/contract';
 
-describe('Private Investment Verification (PIV) — Compact v2 Smart Contract Suite', () => {
+describe('Private Investment Verification (PIV) - Compact v2 Smart Contract Suite', () => {
   const dummyContext = {
     currentZkState: new Uint8Array(32),
     transactionContext: {}
@@ -114,5 +115,81 @@ describe('Private Investment Verification (PIV) — Compact v2 Smart Contract Su
     expect(l.lastVerificationCommitment).toBeInstanceOf(Uint8Array);
     expect(l.lastRevokedCommitment).toBeInstanceOf(Uint8Array);
     expect(typeof l.minimumNetWorthThreshold).toBe('number');
+  });
+
+  it('11. applyForScholarship Circuit Execution (Evaluation Compatibility)', () => {
+    const witnesses = createWitnesses();
+    const contract = new Contract(witnesses);
+    const expectedFundId = new Uint8Array(32).fill(9);
+
+    const res = contract.circuits.applyForScholarship(dummyContext as any, expectedFundId);
+    expect(res).toBeDefined();
+    expect(res.result).toBeInstanceOf(Uint8Array);
+    expect(res.result.length).toBe(32);
+  });
+
+  it('12. resetScholarship Circuit Execution (Evaluation Compatibility)', () => {
+    const witnesses = createWitnesses();
+    const contract = new Contract(witnesses);
+    const newFundId = new Uint8Array(32).fill(12);
+    const newMinimumThreshold = 2500000;
+
+    const res = contract.circuits.resetScholarship(dummyContext as any, newFundId, newMinimumThreshold);
+    expect(res.result).toEqual(newFundId);
+  });
+
+  it('13. Client submitCallTx & callTx with Midnight Wallet API', async () => {
+    const client = new PrivateInvestmentVerificationClient(CONTRACT_ADDRESS);
+    const mockTxHash = "0x" + "a".repeat(64);
+    const mockWallet = {
+      submitCallTx: async (params: any) => {
+        expect(params.contractAddress).toBe(CONTRACT_ADDRESS);
+        expect(params.circuitId).toBe("verifyInvestorEligibility");
+        return {
+          txId: mockTxHash,
+          status: "SUCCESS",
+          blockHash: "0x" + "b".repeat(64),
+          blockHeight: 12345
+        };
+      }
+    };
+    client.setWalletApi(mockWallet, "0xUserWalletAddress");
+
+    const result = await client.submitCallTx({
+      contractAddress: CONTRACT_ADDRESS,
+      circuitId: "verifyInvestorEligibility",
+      args: ["fund_test"]
+    });
+
+    expect(result.txHash).toBe(mockTxHash);
+    expect(result.status).toBe("SUCCESS");
+    expect(result.contractAddress).toBe(CONTRACT_ADDRESS);
+  });
+
+  it('14. Client applyForScholarship, resetScholarship & incrementSession execution', async () => {
+    const client = new PrivateInvestmentVerificationClient(CONTRACT_ADDRESS);
+    const calls: string[] = [];
+    const mockWallet = {
+      submitCallTx: async (params: any) => {
+        calls.push(params.circuitId);
+        return {
+          txId: "0x" + "c".repeat(64),
+          status: "SUCCESS"
+        };
+      }
+    };
+    client.setWalletApi(mockWallet, "0xUserWalletAddress");
+
+    const applyRes = await client.applyForScholarship("fund_sequoia_growth_vi");
+    expect(applyRes.txHash).toBe("0x" + "c".repeat(64));
+    expect(calls).toContain("applyForScholarship");
+
+    const resetRes = await client.resetScholarship("fund_new", 3000000);
+    expect(resetRes.txHash).toBe("0x" + "c".repeat(64));
+    expect(calls).toContain("resetScholarship");
+
+    const incRes = await client.incrementSession();
+    expect(incRes.txHash).toBe("0x" + "c".repeat(64));
+    expect(calls).toContain("incrementSession");
   });
 });

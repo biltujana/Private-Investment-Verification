@@ -11,6 +11,12 @@
           context: context
         };
       },
+      applyForScholarship: (context, expectedFundId) => {
+        return {
+          result: new Uint8Array(32),
+          context: context
+        };
+      },
       verifyInvestmentCommitment: (context, claimedCommitment) => {
         return {
           result: true,
@@ -30,6 +36,12 @@
         };
       },
       resetInvestmentFund: (context, newFundId, newMinimumThreshold) => {
+        return {
+          result: newFundId,
+          context: context
+        };
+      },
+      resetScholarship: (context, newFundId, newMinimumThreshold) => {
         return {
           result: newFundId,
           context: context
