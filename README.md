@@ -2,7 +2,7 @@
 > A privacy-preserving zero-knowledge accredited investor verification and capital commitment dApp built on the Midnight Network using Compact smart contracts and Midnight.js SDK.
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Private--Investment--Verification-181717?style=flat-square&logo=github)](https://github.com/biltujana/Private-Investment-Verification)
-[![YouTube Demo](https://img.shields.io/badge/YouTube-Live_Demo_Video-FF0000?style=flat-square&logo=youtube)](https://youtu.be/V6r9VZ2xhIM)
+[![YouTube Demo](https://img.shields.io/badge/YouTube-Live_Demo_Video-FF0000?style=flat-square&logo=youtube)](https://youtu.be/OisJFvKPM98)
 [![CI/CD Pipeline](https://github.com/biltujana/Private-Investment-Verification/actions/workflows/ci.yml/badge.svg)](https://github.com/biltujana/Private-Investment-Verification/actions/workflows/ci.yml)
 [![Midnight Network](https://img.shields.io/badge/Network-Midnight_Preview-8b5cf6?style=flat-square)](https://preview.midnightexplorer.com/contracts/0x443a1a8b3dfcca0bc809e15fbee0160bfc3e9eb375cfee4f8383b8a3b2fcbaa2)
 [![Midnight.js SDK](https://img.shields.io/badge/Midnight.js-SDK_Integrated-3b82f6?style=flat-square)](https://midnight.network)
@@ -25,9 +25,9 @@ High-net-worth individuals and institutional allocators prove SEC/regulatory acc
 
 ## 🎥 Live Demo Video
 
-[![PIV Video Walkthrough](https://img.shields.io/badge/YouTube-Watch%20Live%20Demo%20Video-FF0000?style=for-the-badge&logo=youtube)](https://youtu.be/V6r9VZ2xhIM)
+[![PIV Video Walkthrough](https://img.shields.io/badge/YouTube-Watch%20Live%20Demo%20Video-FF0000?style=for-the-badge&logo=youtube)](https://youtu.be/OisJFvKPM98)
 
-📺 **Watch on YouTube**: [https://youtu.be/V6r9VZ2xhIM](https://youtu.be/V6r9VZ2xhIM)
+📺 **Watch on YouTube**: [https://youtu.be/OisJFvKPM98](https://youtu.be/OisJFvKPM98)
 
 ---
 
@@ -35,7 +35,7 @@ High-net-worth individuals and institutional allocators prove SEC/regulatory acc
 
 - 📄 **Project Proposal**: [PROPOSAL.md](PROPOSAL.md)
 - 📦 **GitHub Repository**: [https://github.com/biltujana/Private-Investment-Verification](https://github.com/biltujana/Private-Investment-Verification)
-- 🎥 **YouTube Video Walkthrough**: [https://youtu.be/V6r9VZ2xhIM](https://youtu.be/V6r9VZ2xhIM)
+- 🎥 **YouTube Video Walkthrough**: [https://youtu.be/OisJFvKPM98](https://youtu.be/OisJFvKPM98)
 - ⚙️ **CI/CD Workflow**: [.github/workflows/ci.yml](.github/workflows/ci.yml)
 - 🌐 **Midnight Explorer**: [https://preview.midnightexplorer.com/contracts/0x443a1a8b3dfcca0bc809e15fbee0160bfc3e9eb375cfee4f8383b8a3b2fcbaa2](https://preview.midnightexplorer.com/contracts/0x443a1a8b3dfcca0bc809e15fbee0160bfc3e9eb375cfee4f8383b8a3b2fcbaa2)
 - 📡 **Network**: Midnight Preview Testnet
@@ -43,6 +43,122 @@ High-net-worth individuals and institutional allocators prove SEC/regulatory acc
 - 🌐 **Preview Node RPC**: `https://rpc.preview.midnight.network`
 - 📊 **Preview Indexer**: `https://indexer.preview.midnight.network/api/v4/graphql`
 - 💧 **Preview Faucet**: `https://faucet.preview.midnight.network`
+
+---
+
+## 💻 Clone & Local Setup Guide
+
+Follow this step-by-step guide to clone, install, test, and run the **Private Investment Verification (PIV)** platform locally on your machine.
+
+---
+
+### Prerequisites
+
+Ensure you have the following installed on your system:
+- **Node.js**: Version `18.x`, `20.x`, or `22.x` ([Download Node.js](https://nodejs.org))
+- **npm**: Version `9.x` or higher (bundled with Node.js)
+- **Git**: Version `2.x` or higher ([Download Git](https://git-scm.com))
+- **Midnight Lace or 1AM Wallet**: Browser extension for connecting and signing transactions on **Midnight Preview Testnet**.
+  - Install Midnight Lace or 1AM extension in Chrome, Brave, or Edge.
+  - Switch network to **Midnight Preview Testnet**.
+  - Fund your wallet with testnet tokens from the [Midnight Faucet](https://faucet.preview.midnight.network).
+
+---
+
+### Step 1: Clone the Repository
+
+Clone the project repository from GitHub:
+
+```bash
+git clone https://github.com/biltujana/Private-Investment-Verification.git
+```
+
+Navigate into the cloned project directory:
+
+```bash
+cd Private-Investment-Verification
+```
+
+---
+
+### Step 2: Install Dependencies
+
+Install all project dependencies (Next.js 14, React 18, Compact runtime, Midnight.js SDK packages, and Vitest):
+
+```bash
+npm install
+```
+
+> **Note**: No `.env` configuration file is required for local execution. All necessary endpoints (Midnight Preview RPC, GraphQL indexer, deployed contract address, and network IDs) are pre-configured out-of-the-box in `src/lib/contract.ts`.
+
+---
+
+### Step 3: Run the Automated Vitest Test Suite
+
+Execute the unit test suite to verify Compact smart contract circuits, witness confidentiality, threshold boundary assertions, and client transaction execution:
+
+```bash
+npm run test
+```
+
+Expected output:
+```text
+ ✓ tests/counter.test.ts (14 tests)
+ Test Files  1 passed (1)
+      Tests  14 passed (14)
+```
+
+To run tests in watch mode during development:
+```bash
+npm run test:watch
+```
+
+---
+
+### Step 4: Start the Local Development Server
+
+Launch the Next.js local development server:
+
+```bash
+npm run dev
+```
+
+Open your browser and navigate to:
+```text
+http://localhost:3000
+```
+
+The application will be live with full functionality:
+- **`/` (Dashboard)**: Real-time overview of the 6 ZK circuits, 8 public ledger fields, 5 private witnesses, and contract deployment metrics.
+- **`/verify` (Accreditation Portal)**: Private investor portal to attest net worth qualifications ($2.5M+) and CPA audit reports in zero-knowledge.
+- **`/manager` (Fund Manager Console)**: General Partner console to rotate fund offering IDs, configure accreditation thresholds, and moderate subscriptions.
+- **`/explorer` (Contract Explorer)**: Live on-chain public ledger viewer and Midnight Preview Explorer inspector.
+
+---
+
+### Step 5: Build for Production
+
+To create an optimized production build:
+
+```bash
+npm run build
+```
+
+To run the production build locally:
+
+```bash
+npm run start
+```
+
+---
+
+### Step 6: Connecting Your Midnight Wallet (1AM / Lace)
+
+1. Open the application in your browser (`http://localhost:3000`).
+2. Click **Connect Wallet** in the top navigation bar.
+3. Your Midnight Lace or 1AM extension will display a connection prompt. Approve the connection for **Midnight Preview Testnet**.
+4. Once connected, your masked wallet address will appear in the header.
+5. Navigate to `/verify` to generate client-side ZK proofs and anchor accredited investor commitments on-chain!
 
 ---
 
@@ -225,4 +341,4 @@ export circuit incrementSession(): [] {
 - [x] **Interactive Next.js 14 Web UI**: App Router dApp with ZK net worth sliders, investor portal, fund manager console, and inspector.
 - [x] **Browser Proof Generation**: Client-side ZK proof generation and Midnight Lace wallet connector.
 - [x] **On-Chain Midnight Preview Deployment**: [Midnight Explorer](https://preview.midnightexplorer.com/contracts/0x443a1a8b3dfcca0bc809e15fbee0160bfc3e9eb375cfee4f8383b8a3b2fcbaa2).
-- [x] **YouTube Live Demo Walkthrough**: [https://youtu.be/V6r9VZ2xhIM](https://youtu.be/V6r9VZ2xhIM).
+- [x] **YouTube Live Demo Walkthrough**: [https://youtu.be/OisJFvKPM98](https://youtu.be/OisJFvKPM98).

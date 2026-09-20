@@ -5,9 +5,9 @@
 
 ## 🎥 Live Demo Video
 
-[![PIV Video Walkthrough](https://img.shields.io/badge/YouTube-Watch%20Live%20Demo%20Video-FF0000?style=for-the-badge&logo=youtube)](https://youtu.be/V6r9VZ2xhIM)
+[![PIV Video Walkthrough](https://img.shields.io/badge/YouTube-Watch%20Live%20Demo%20Video-FF0000?style=for-the-badge&logo=youtube)](https://youtu.be/OisJFvKPM98)
 
-📺 **Watch on YouTube**: [https://youtu.be/V6r9VZ2xhIM](https://youtu.be/V6r9VZ2xhIM)
+📺 **Watch on YouTube**: [https://youtu.be/OisJFvKPM98](https://youtu.be/OisJFvKPM98)
 
 ---
 
@@ -95,7 +95,7 @@ PIV leverages Midnight's dual-state hybrid architecture, combining private off-c
 
 - **Contract Address**: `0x443a1a8b3dfcca0bc809e15fbee0160bfc3e9eb375cfee4f8383b8a3b2fcbaa2` ✅ **CONFIRMED**
 - **Midnight Explorer**: [https://preview.midnightexplorer.com/contracts/0x443a1a8b3dfcca0bc809e15fbee0160bfc3e9eb375cfee4f8383b8a3b2fcbaa2](https://preview.midnightexplorer.com/contracts/0x443a1a8b3dfcca0bc809e15fbee0160bfc3e9eb375cfee4f8383b8a3b2fcbaa2)
-- **YouTube Demo Video**: [https://youtu.be/V6r9VZ2xhIM](https://youtu.be/V6r9VZ2xhIM)
+- **YouTube Demo Video**: [https://youtu.be/OisJFvKPM98](https://youtu.be/OisJFvKPM98)
 - **Network**: Midnight Preview Testnet
 - **Preview RPC**: `https://rpc.preview.midnight.network`
 - **Preview Indexer**: `https://indexer.preview.midnight.network/api/v4/graphql`
@@ -111,4 +111,4 @@ PIV leverages Midnight's dual-state hybrid architecture, combining private off-c
 - [x] **100% Passing Test Suite**: 10/10 Vitest unit tests covering circuit execution and witness privacy.
 - [x] **Interactive Next.js 14 Web dApp**: Full interactive UI with investor portal, fund manager console, and Midnight Lace wallet connection.
 - [x] **Live On-Chain Deployment**: Deployed on Midnight Preview at `0x443a1a8b3dfcca0bc809e15fbee0160bfc3e9eb375cfee4f8383b8a3b2fcbaa2`.
-- [x] **YouTube Live Demo Walkthrough**: [https://youtu.be/V6r9VZ2xhIM](https://youtu.be/V6r9VZ2xhIM).
+- [x] **YouTube Live Demo Walkthrough**: [https://youtu.be/OisJFvKPM98](https://youtu.be/OisJFvKPM98).
