@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "compile": "compact compile contracts/private_investment_verification.compact managed/"
   },
   "dependencies": {
     "@midnight-ntwrk/compact-runtime": "0.16.0",
