@@ -40,7 +40,7 @@ export default function VerifyInvestorPage() {
     setVerifyResult(null);
 
     try {
-      addLog("> [WALLET] Connecting to Midnight Lace Wallet via @midnight-ntwrk/dapp-connector-api...", "info");
+      addLog("> [WALLET] Connecting to 1am Wallet via @midnight-ntwrk/dapp-connector-api...", "info");
       addLog(`> [NETWORK] Using Midnight Network (NetworkId: ${NETWORK_CONFIG.networkId})`, "info");
       addLog("> [ZK WITNESS] investorSecretKey() - private investor secret loaded in browser memory", "info");
       addLog("> [ZK WITNESS] financialAuditProofHash() - CPA audit report hashed locally (SHA-256)", "info");

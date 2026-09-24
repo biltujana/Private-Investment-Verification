@@ -36,7 +36,7 @@ export default function ManagerPage() {
     setLogs([]);
     setResult(null);
     try {
-      addLog("> [WALLET] Connecting to Midnight Lace Wallet via @midnight-ntwrk/dapp-connector-api...", "info");
+      addLog("> [WALLET] Connecting to 1am Wallet via @midnight-ntwrk/dapp-connector-api...", "info");
       addLog("> [ZK WITNESS] fundManagerSigningKey() - authorized fund general partner key loaded", "info");
       addLog(`> [CIRCUIT CALL] Executing callTx.setFundManagerCommitment(Uint<32>) - threshold=$${minThreshold.toLocaleString()}...`, "info");
 
