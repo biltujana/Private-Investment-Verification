@@ -362,18 +362,39 @@ export class PrivateInvestmentVerificationClient {
       this.walletApi = api;
       this.isConnected = true;
 
+      // Safely extract a plain string address from whatever the wallet API returns.
+      // 1am wallet may return objects, arrays, or Bech32 wrappers instead of raw strings.
+      const extractAddress = (raw: any): string => {
+        if (typeof raw === "string" && raw.length > 0) return raw;
+        if (raw && typeof raw === "object") {
+          // Try common property names used by different wallet implementations
+          const candidate =
+            raw.address ?? raw.unshieldedAddress ?? raw.bech32 ??
+            raw.rawAddress ?? raw.coinPublicKey ?? raw.publicKey ??
+            raw.value ?? raw.hex ?? raw.encoded;
+          if (candidate) return extractAddress(candidate);
+          // Last resort: JSON stringify
+          return JSON.stringify(raw);
+        }
+        if (raw instanceof Uint8Array) {
+          return "0x" + Array.from(raw).map((b: number) => b.toString(16).padStart(2, "0")).join("");
+        }
+        return String(raw || "0xMidnightConnected");
+      };
+
       // Resolve wallet address from connected API
+      let rawAddress: any = null;
       if (typeof (api as any).getUnshieldedAddress === "function") {
-        this.connectedAddress = await (api as any).getUnshieldedAddress();
+        rawAddress = await (api as any).getUnshieldedAddress();
       } else if (typeof (api as any).getAddress === "function") {
-        this.connectedAddress = await (api as any).getAddress();
+        rawAddress = await (api as any).getAddress();
       } else if (typeof (api as any).state === "function") {
         const st = await (api as any).state();
-        this.connectedAddress =
-          st?.address || st?.unshieldedAddress || st?.coinPublicKey || "0xMidnightConnected";
+        rawAddress = st?.address ?? st?.unshieldedAddress ?? st?.coinPublicKey ?? st?.publicKey ?? "0xMidnightConnected";
       } else {
-        this.connectedAddress = "0xMidnightConnected";
+        rawAddress = "0xMidnightConnected";
       }
+      this.connectedAddress = extractAddress(rawAddress);
 
       // Store in session for UX persistence
       if (typeof sessionStorage !== "undefined") {

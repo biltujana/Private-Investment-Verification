@@ -17,9 +17,17 @@ export default function Navbar({
   connecting: boolean;
 }) {
   const pathname = usePathname();
-  const shortAddr = walletAddress
-    ? `${walletAddress.substring(0, 8)}...${walletAddress.slice(-6)}`
+
+  // Defensively coerce walletAddress to string — wallet APIs may return non-string types
+  const addrStr = walletAddress
+    ? typeof walletAddress === "string"
+      ? walletAddress
+      : JSON.stringify(walletAddress)
     : null;
+
+  const shortAddr = addrStr && addrStr.length >= 6
+    ? `${addrStr.substring(0, 8)}...${addrStr.slice(-6)}`
+    : addrStr || null;
 
   return (
     <header className="nav">
@@ -42,7 +50,7 @@ export default function Navbar({
         </Link>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-        {walletAddress ? (
+        {addrStr ? (
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             {walletName && (
               <span
