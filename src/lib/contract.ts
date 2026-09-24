@@ -288,49 +288,127 @@ export class PrivateInvestmentVerificationClient {
     };
   }
 
-  // Wallet Connection via Midnight DApp Connector
-  public async connectWallet(walletType: "lace" | "1am" = "lace"): Promise<{ address: string; network: string }> {
+  // ============================================================================
+  // WALLET CONNECTION via Official Midnight DApp Connector API
+  // Supports: 1am wallet, Lace wallet (Midnight), any window.midnight provider.
+  // Correctly enumerates window.midnight values rather than relying on static keys.
+  // ============================================================================
+
+  /**
+   * List all available Midnight wallets injected into window.midnight.
+   * Each entry is an InitialAPI instance (may expose .name, .rdns, .icon).
+   */
+  public listAvailableWallets(): Array<{ key: string; api: InitialAPI }> {
+    if (typeof window === "undefined") return [];
+    const midnightObj = (window as any).midnight;
+    if (!midnightObj || typeof midnightObj !== "object") return [];
+    return Object.entries(midnightObj).map(([key, api]) => ({ key, api: api as InitialAPI }));
+  }
+
+  /**
+   * Connect to a Midnight wallet.
+   * @param preferredRdns - Optional RDNS to prefer (e.g. "xyz.1am" for 1am wallet, 
+   *                         "io.lace" for Lace). If not provided, first available wallet is used.
+   */
+  public async connectWallet(
+    preferredRdns?: string
+  ): Promise<{ address: string; network: string; walletName?: string }> {
     if (typeof window === "undefined") {
       this.connectedAddress = "0xMidnightPreviewNodeUser";
       this.isConnected = true;
       return { address: this.connectedAddress, network: "Midnight Preview Testnet" };
     }
 
-    try {
-      const midnightObj = (window as any).midnight;
-      if (midnightObj) {
-        const walletConnector: InitialAPI =
-          walletType === "1am"
-            ? midnightObj["1am-wallet"] || midnightObj.mnLace
-            : midnightObj.mnLace || midnightObj["1am-wallet"];
-
-        if (walletConnector && typeof walletConnector.enable === "function") {
-          const api: ConnectedAPI = await walletConnector.enable();
-          this.walletApi = api;
-          this.isConnected = true;
-
-          if (typeof (api as any).getUnshieldedAddress === "function") {
-            this.connectedAddress = await (api as any).getUnshieldedAddress();
-          } else if (typeof (api as any).getAddress === "function") {
-            this.connectedAddress = await (api as any).getAddress();
-          } else if (typeof (api as any).state === "function") {
-            const st = await (api as any).state();
-            this.connectedAddress = st?.address || st?.unshieldedAddress || "0xMidnightConnected";
-          } else {
-            this.connectedAddress = "0xMidnightConnected";
-          }
-
-          return { address: this.connectedAddress, network: "Midnight Preview Testnet" };
-        }
-      }
-    } catch (err) {
-      console.warn("DApp connector connection error:", err);
+    // Enumerate all injected wallets from window.midnight
+    const wallets = this.listAvailableWallets();
+    if (wallets.length === 0) {
+      throw new Error(
+        "No Midnight wallet found.\n\nPlease install the 1am wallet extension:\nhttps://1am.xyz\n\nOr the Lace wallet with Midnight support:\nhttps://www.lace.io"
+      );
     }
 
-    // Standard fallback for browser without Lace extension installed
-    this.connectedAddress = "0xPreviewWalletUser";
-    this.isConnected = true;
-    return { address: this.connectedAddress, network: "Midnight Preview Testnet" };
+    // Pick preferred wallet by rdns, or fall back to first available
+    let chosen: InitialAPI | undefined;
+    let chosenName: string | undefined;
+
+    if (preferredRdns) {
+      for (const { api } of wallets) {
+        const rdns = (api as any).rdns || (api as any).name || "";
+        if (rdns.toLowerCase().includes(preferredRdns.toLowerCase())) {
+          chosen = api;
+          chosenName = (api as any).name || preferredRdns;
+          break;
+        }
+      }
+    }
+
+    if (!chosen) {
+      chosen = wallets[0].api;
+      chosenName = (chosen as any).name || "Midnight Wallet";
+    }
+
+    try {
+      let api: ConnectedAPI;
+
+      // Prefer newer connect(networkId) API, fall back to enable()
+      if (typeof (chosen as any).connect === "function") {
+        api = await (chosen as any).connect("preview");
+      } else if (typeof chosen.enable === "function") {
+        api = await chosen.enable();
+      } else {
+        throw new Error("Wallet does not support the Midnight DApp Connector API.");
+      }
+
+      this.walletApi = api;
+      this.isConnected = true;
+
+      // Resolve wallet address from connected API
+      if (typeof (api as any).getUnshieldedAddress === "function") {
+        this.connectedAddress = await (api as any).getUnshieldedAddress();
+      } else if (typeof (api as any).getAddress === "function") {
+        this.connectedAddress = await (api as any).getAddress();
+      } else if (typeof (api as any).state === "function") {
+        const st = await (api as any).state();
+        this.connectedAddress =
+          st?.address || st?.unshieldedAddress || st?.coinPublicKey || "0xMidnightConnected";
+      } else {
+        this.connectedAddress = "0xMidnightConnected";
+      }
+
+      // Store in session for UX persistence
+      if (typeof sessionStorage !== "undefined") {
+        sessionStorage.setItem("piv_wallet_connected", "true");
+        sessionStorage.setItem("piv_wallet_address", this.connectedAddress!);
+      }
+
+      return {
+        address: this.connectedAddress!,
+        network: "Midnight Preview Testnet",
+        walletName: chosenName
+      };
+    } catch (err: any) {
+      const message = err?.message || String(err);
+      console.warn("Midnight DApp connector error:", message);
+
+      // If user rejected or no wallet installed, surface a clear error
+      if (message.includes("rejected") || message.includes("denied") || message.includes("cancelled")) {
+        throw new Error("Wallet connection rejected by user.");
+      }
+
+      throw new Error(
+        `Failed to connect wallet: ${message}\n\nMake sure the 1am wallet (https://1am.xyz) or Lace wallet is installed and unlocked.`
+      );
+    }
+  }
+
+  public disconnectWallet(): void {
+    this.walletApi = null;
+    this.isConnected = false;
+    this.connectedAddress = null;
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.removeItem("piv_wallet_connected");
+      sessionStorage.removeItem("piv_wallet_address");
+    }
   }
 
   public isWalletConnected(): boolean {

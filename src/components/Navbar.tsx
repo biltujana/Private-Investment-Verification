@@ -5,11 +5,13 @@ import { usePathname } from "next/navigation";
 
 export default function Navbar({
   walletAddress,
+  walletName,
   onConnect,
   onDisconnect,
   connecting
 }: {
   walletAddress: string | null;
+  walletName?: string | null;
   onConnect: () => void;
   onDisconnect: () => void;
   connecting: boolean;
@@ -42,6 +44,17 @@ export default function Navbar({
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
         {walletAddress ? (
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            {walletName && (
+              <span
+                style={{
+                  fontSize: "0.72rem",
+                  color: "#94a3b8",
+                  fontWeight: 500
+                }}
+              >
+                {walletName}
+              </span>
+            )}
             <span
               style={{
                 fontSize: "0.8rem",
@@ -70,7 +83,7 @@ export default function Navbar({
             style={{ padding: "0.35rem 1.1rem", fontSize: "0.8rem" }}
             disabled={connecting}
           >
-            {connecting ? "Connecting..." : "Connect Lace Wallet"}
+            {connecting ? "Connecting..." : "Connect 1am Wallet"}
           </button>
         )}
       </div>
