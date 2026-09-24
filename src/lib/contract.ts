@@ -1,5 +1,3 @@
-"use client";
-
 import type {
   InitialAPI,
   ConnectedAPI,
@@ -16,11 +14,13 @@ export {
 } from './constants';
 import { CONTRACT_ADDRESS, VERIFIED_DEPLOYMENT, NETWORK_CONFIG, type NetworkConfiguration } from './constants';
 
-// Initialize global network identifier via Midnight.js SDK
-try {
-  setNetworkId(NETWORK_CONFIG.networkId);
-} catch (e) {
-  // Already initialized
+// Initialize global network identifier via Midnight.js SDK (client-only, safe guard for SSR)
+if (typeof window !== "undefined") {
+  try {
+    setNetworkId(NETWORK_CONFIG.networkId);
+  } catch (e) {
+    // Already initialized or not yet available
+  }
 }
 
 // Cryptographically secure 32-byte entropy generator (No default secrets!)
@@ -806,13 +806,25 @@ export function getClient(): PrivateInvestmentVerificationClient {
   return _clientInstance;
 }
 
-// Global browser window bindings for evaluation scripts
-if (typeof window !== "undefined") {
-  const c = getClient();
-  (window as any).pivClient = c;
-  (window as any).applyForScholarship = (fundId: string) => c.applyForScholarship(fundId);
-  (window as any).resetScholarship = (fundId: string, threshold: number) => c.resetScholarship(fundId, threshold);
-  (window as any).incrementSession = () => c.incrementSession();
-  (window as any).verifyInvestorEligibility = (fundId: string) => c.verifyInvestorEligibility(fundId);
-  (window as any).resetInvestmentFund = (fundId: string, threshold: number) => c.resetInvestmentFund(fundId, threshold);
+// Global browser window bindings for evaluation scripts (deferred to avoid SSR crash)
+if (typeof window !== "undefined" && typeof document !== "undefined") {
+  // Defer to ensure DOM is ready and we are fully client-side
+  const bindGlobals = () => {
+    try {
+      const c = getClient();
+      (window as any).pivClient = c;
+      (window as any).applyForScholarship = (fundId: string) => c.applyForScholarship(fundId);
+      (window as any).resetScholarship = (fundId: string, threshold: number) => c.resetScholarship(fundId, threshold);
+      (window as any).incrementSession = () => c.incrementSession();
+      (window as any).verifyInvestorEligibility = (fundId: string) => c.verifyInvestorEligibility(fundId);
+      (window as any).resetInvestmentFund = (fundId: string, threshold: number) => c.resetInvestmentFund(fundId, threshold);
+    } catch (e) {
+      console.warn("[PIV] Failed to bind window globals:", e);
+    }
+  };
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bindGlobals);
+  } else {
+    bindGlobals();
+  }
 }
