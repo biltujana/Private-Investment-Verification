@@ -4,12 +4,12 @@
   "runtime-version": "0.16.0",
   "circuits": [
     {
-      "name": "submitExam",
+      "name": "verifyInvestorEligibility",
       "pure": false,
       "proof": true,
       "arguments": [
         {
-          "name": "expectedExamId",
+          "name": "expectedFundId",
           "type": {
             "type-name": "Bytes",
             "length": 32
@@ -22,12 +22,12 @@
       }
     },
     {
-      "name": "resetExam",
+      "name": "verifyInvestmentCommitment",
       "pure": false,
       "proof": true,
       "arguments": [
         {
-          "name": "newExamId",
+          "name": "claimedCommitment",
           "type": {
             "type-name": "Bytes",
             "length": 32
@@ -35,87 +35,245 @@
         }
       ],
       "result-type": {
-        "type-name": "Tuple",
-        "types": [
-        ]
+        "type-name": "Boolean"
+      }
+    },
+    {
+      "name": "revokeInvestorAccreditation",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "commitmentToRevoke",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "setFundManagerCommitment",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "newMinimumThreshold",
+          "type": {
+            "type-name": "Uint",
+            "bits": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "resetInvestmentFund",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "newFundId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "newMinimumThreshold",
+          "type": {
+            "type-name": "Uint",
+            "bits": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
       }
     },
     {
       "name": "incrementSession",
       "pure": false,
       "proof": true,
-      "arguments": [
-      ],
+      "arguments": [],
       "result-type": {
         "type-name": "Tuple",
-        "types": [
-        ]
+        "types": []
+      }
+    },
+    {
+      "name": "applyForScholarship",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "expectedFundId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "resetScholarship",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "newFundId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "newMinimumThreshold",
+          "type": {
+            "type-name": "Uint",
+            "bits": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
       }
     }
   ],
   "witnesses": [
     {
-      "name": "studentSecretKey",
-      "arguments": [
-      ],
+      "name": "investorSecretKey",
+      "arguments": [],
       "result type": {
         "type-name": "Bytes",
         "length": 32
       }
     },
     {
-      "name": "submissionNonce",
-      "arguments": [
-      ],
+      "name": "financialAuditProofHash",
+      "arguments": [],
       "result type": {
         "type-name": "Bytes",
         "length": 32
       }
     },
     {
-      "name": "answerHash",
-      "arguments": [
-      ],
+      "name": "netWorthAmount",
+      "arguments": [],
+      "result type": {
+        "type-name": "Uint",
+        "bits": 32
+      }
+    },
+    {
+      "name": "verificationProofNonce",
+      "arguments": [],
+      "result type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "fundManagerSigningKey",
+      "arguments": [],
       "result type": {
         "type-name": "Bytes",
         "length": 32
       }
     }
   ],
-  "contracts": [
-  ],
+  "contracts": [],
   "ledger": [
     {
-      "name": "submissionCount",
+      "name": "verifiedCount",
       "index": 0,
       "exported": true,
       "storage": "Counter"
     },
     {
-      "name": "examId",
+      "name": "revokedCount",
       "index": 1,
       "exported": true,
-      "storage": "Cell",
-      "type": {
-        "type-name": "Bytes",
-        "length": 32
-      }
-    },
-    {
-      "name": "lastSubmissionCommitment",
-      "index": 2,
-      "exported": true,
-      "storage": "Cell",
-      "type": {
-        "type-name": "Bytes",
-        "length": 32
-      }
+      "storage": "Counter"
     },
     {
       "name": "activeSession",
-      "index": 3,
+      "index": 2,
       "exported": true,
       "storage": "Counter"
+    },
+    {
+      "name": "fundId",
+      "index": 3,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "fundManagerCommitment",
+      "index": 4,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "lastVerificationCommitment",
+      "index": 5,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "lastRevokedCommitment",
+      "index": 6,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "minimumNetWorthThreshold",
+      "index": 7,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Uint",
+        "bits": 32
+      }
+    },
+    {
+      "name": "lastNullifier",
+      "index": 8,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
     }
   ]
 }
