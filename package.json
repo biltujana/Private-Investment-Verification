@@ -1,7 +1,7 @@
 {
   "name": "private-investment-verification",
   "version": "2.0.0",
-  "description": "Private Investment Verification (PIV) — Privacy-preserving zero-knowledge accredited investor verification and capital commitment dApp on Midnight Network",
+  "description": "Private Investment Verification (PIV) - Privacy-preserving zero-knowledge accredited investor verification and capital commitment dApp on Midnight Network",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,7 +10,8 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "compile": "compact compile contracts/private_investment_verification.compact managed/"
+    "compile": "node scripts/compile-compact.mjs",
+    "compile:compact": "node scripts/compile-compact.mjs"
   },
   "dependencies": {
     "@midnight-ntwrk/compact-runtime": "0.16.0",

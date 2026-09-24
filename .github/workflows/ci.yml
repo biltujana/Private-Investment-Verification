@@ -1,4 +1,4 @@
-name: CI/CD Pipeline — Private Investment Verification
+name: CI/CD Pipeline - Private Investment Verification
 
 on:
   push:
@@ -23,34 +23,20 @@ jobs:
       - name: Install Dependencies
         run: npm ci || npm install
 
-      - name: Install Compact Toolchain
-        run: |
-          curl --proto '=https' --tlsv1.2 -LsSf \
-            https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
-      - name: Select Compact Compiler 0.31.1
-        run: |
-          export PATH="$HOME/.local/bin:$PATH"
-          compact update 0.31.1 || compact update || true
-          compact --version || true
-
-      - name: Compile Compact Contract From Scratch
-        env:
-          COMPACT_BACKEND: wasm
-        run: |
-          export PATH="$HOME/.local/bin:$PATH"
-          echo "=== Compiling contracts/private_investment_verification.compact from scratch ==="
-          compact compile contracts/private_investment_verification.compact managed/ || echo "Compact compile step complete."
+      - name: Compact Contract Compilation & Verification
+        run: npm run compile:compact
 
       - name: Verify Contract Artifacts
         run: |
           echo "=== Checking Managed Artifacts ==="
           ls -la managed/compiler/
           ls -la managed/contract/
+          ls -la managed/keys/
+          ls -la managed/zkir/
           test -f managed/compiler/contract-info.json
           test -f managed/contract/index.d.ts
           test -f managed/contract/index.js
+          echo "All managed contract artifacts verified successfully."
 
       - name: Run Vitest Unit & Integration Tests (34 Tests)
         run: npm test
