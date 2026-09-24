@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -22,7 +22,8 @@ export default function Navbar({
   return (
     <header className="nav">
       <Link href="/" className="nav-brand">
-        <span>💎</span> PIV — Midnight ZK
+        <span style={{ color: "#10b981", fontWeight: 800 }}>PIV</span>
+        <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 400 }}>Midnight ZK</span>
       </Link>
       <div className="nav-links">
         <Link href="/" className={`nav-link ${pathname === "/" ? "active" : ""}`}>
@@ -44,15 +45,15 @@ export default function Navbar({
             <span
               style={{
                 fontSize: "0.8rem",
-                background: "rgba(59, 130, 246, 0.15)",
-                border: "1px solid rgba(59, 130, 246, 0.4)",
-                color: "#60a5fa",
+                background: "rgba(16, 185, 129, 0.15)",
+                border: "1px solid rgba(16, 185, 129, 0.4)",
+                color: "#10b981",
                 padding: "0.35rem 0.9rem",
                 borderRadius: "99px",
                 fontWeight: 700
               }}
             >
-              🟢 {shortAddr}
+              {shortAddr}
             </span>
             <button
               onClick={onDisconnect}
@@ -64,19 +65,12 @@ export default function Navbar({
           </div>
         ) : (
           <button
-            id="connect-wallet-btn"
             onClick={onConnect}
-            disabled={connecting}
             className="btn-primary"
-            style={{ padding: "0.45rem 1.1rem", fontSize: "0.82rem" }}
+            style={{ padding: "0.35rem 1.1rem", fontSize: "0.8rem" }}
+            disabled={connecting}
           >
-            {connecting ? (
-              <>
-                <span className="spinner" /> Connecting...
-              </>
-            ) : (
-              <>👛 Connect Wallet</>
-            )}
+            {connecting ? "Connecting..." : "Connect Lace Wallet"}
           </button>
         )}
       </div>
