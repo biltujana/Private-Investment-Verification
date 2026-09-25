@@ -9,7 +9,6 @@ export default function VerifyInvestorPage() {
   const [investorSecretKey, setInvestorSecretKey] = useState("");
   const [cpaAuditDoc, setCpaAuditDoc] = useState("");
   const [netWorthUsd, setNetWorthUsd] = useState(2500000);
-  const [dealComments, setDealComments] = useState("");
   const [loading, setLoading] = useState(false);
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -23,10 +22,10 @@ export default function VerifyInvestorPage() {
   const handleGenerateKey = () => {
     const key = generateSecureEntropy();
     setInvestorSecretKey(key);
-    addLog(`> [ENTROPY] Generated secure 256-bit investor secret key: ${key.slice(0, 16)}...`, "info");
+    addLog(`> [ENTROPY] Generated 256-bit investor key: ${key.slice(0, 16)}...`, "info");
   };
 
-  const handleCopyCommitment = (text: string) => {
+  const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -34,286 +33,187 @@ export default function VerifyInvestorPage() {
 
   const handleVerifyInvestor = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setLogs([]);
-    setResult(null);
-    setVerifyResult(null);
-
+    setLoading(true); setLogs([]); setResult(null); setVerifyResult(null);
     try {
       addLog("> [WALLET] Connecting to 1am Wallet via @midnight-ntwrk/dapp-connector-api...", "info");
-      addLog(`> [NETWORK] Using Midnight Network (NetworkId: ${NETWORK_CONFIG.networkId})`, "info");
-      addLog("> [ZK WITNESS] investorSecretKey() - private investor secret loaded in browser memory", "info");
-      addLog("> [ZK WITNESS] financialAuditProofHash() - CPA audit report hashed locally (SHA-256)", "info");
-      addLog(`> [ZK WITNESS] netWorthAmount() = $${netWorthUsd.toLocaleString()} USD (asserting >= $2,500,000 threshold in ZK)...`, "info");
-      addLog("> [CIRCUIT CALL] Invoking generated callTx.verifyInvestorEligibility(Bytes<32>)...", "info");
-
+      addLog(`> [NETWORK] NetworkId: ${NETWORK_CONFIG.networkId}`, "info");
+      addLog("> [ZK WITNESS] investorSecretKey() loaded in browser memory", "info");
+      addLog("> [ZK WITNESS] financialAuditProofHash() — CPA audit hashed locally (SHA-256)", "info");
+      addLog(`> [ZK WITNESS] netWorthAmount() = $${netWorthUsd.toLocaleString()} USD`, "info");
+      addLog("> [CIRCUIT] Invoking callTx.verifyInvestorEligibility(Bytes<32>)...", "info");
       const client: PrivateInvestmentVerificationClient = getClient();
-      
-      // Use user-provided key or generate cryptographically secure key (No hardcoded default secrets!)
       const activeKey = investorSecretKey.trim() || client.getOrGenerateInvestorKey();
       client.setInvestorKey(activeKey);
-
-      if (cpaAuditDoc.trim()) {
-        client.setAuditProofHash(cpaAuditDoc.trim());
-      }
+      if (cpaAuditDoc.trim()) client.setAuditProofHash(cpaAuditDoc.trim());
       client.setNetWorthAmount(netWorthUsd);
-
       const res = await client.callTx.verifyInvestorEligibility(fundId);
-
-      setResult(res);
-      setClaimedCommitment(res.commitmentHex || "");
-      addLog("> [SUCCESS] ZK Accredited Investor Commitment successfully anchored on-chain!", "success");
+      setResult(res); setClaimedCommitment(res.commitmentHex || "");
+      addLog("> [SUCCESS] ZK commitment anchored on-chain!", "success");
       addLog(`> [COMMITMENT] ${res.commitmentHex}`, "success");
-      addLog(`> [NULLIFIER] ${res.nullifierHex} (Replay Protection Active)`, "success");
-      addLog(`> [SESSION] Bound to active epoch session #${res.sessionNumber}`, "success");
-      addLog(`> [TX HASH] ${res.txHash}`, "success");
-      addLog(`> [FEE] ${res.txFee} ${res.txFeeAsset} paid by ${res.signedBy}`, "success");
+      addLog(`> [NULLIFIER] ${res.nullifierHex}`, "success");
+      addLog(`> [SESSION] Epoch #${res.sessionNumber}`, "success");
+      addLog(`> [TX] ${res.txHash}`, "success");
     } catch (err: any) {
       addLog(`> [ERROR] ${err?.message || err}`, "error");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handleVerifyCommitment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!claimedCommitment) return;
-    setVerifyLoading(true);
-    setVerifyResult(null);
-
+    setVerifyLoading(true); setVerifyResult(null);
     try {
-      addLog(`> [PUBLIC VERIFICATION] Calling callTx.verifyInvestmentCommitment(${claimedCommitment.slice(0, 16)}...)`, "info");
+      addLog(`> [PUBLIC VERIFY] callTx.verifyInvestmentCommitment(${claimedCommitment.slice(0, 16)}...)`, "info");
       const client = getClient();
       const res = await client.callTx.verifyInvestmentCommitment(claimedCommitment);
       setVerifyResult(res);
-      addLog("> [VERIFIED] Commitment confirmed valid and active on Midnight Preview ledger.", "success");
+      addLog("> [VERIFIED] Commitment valid on Midnight Preview ledger.", "success");
     } catch (err: any) {
-      addLog(`> [VERIFICATION FAILED] ${err?.message || err}`, "error");
-    } finally {
-      setVerifyLoading(false);
-    }
+      addLog(`> [FAILED] ${err?.message || err}`, "error");
+    } finally { setVerifyLoading(false); }
   };
 
+  const F: React.CSSProperties = { marginBottom: "1.25rem" };
+
   return (
-    <div style={{ maxWidth: 860, margin: "0 auto", padding: "2rem 1.5rem 5rem" }}>
-      <div style={{ marginBottom: "2rem" }}>
-        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
-          <span className="badge badge-emerald">Accredited Investor Portal</span>
-          <span className="badge badge-cyan">ZK Circuit 1 & 2</span>
-          <span className="badge badge-indigo">Replay Prevention</span>
-        </div>
-        <h1 className="section-title">Verify Investor Accreditation</h1>
-        <p className="section-desc">
-          Generate an accredited investor zero-knowledge proof locally on your device. Your net worth, financial balances, and identity remain strictly confidential.
+    <div>
+      {/* Page header */}
+      <div style={{ padding: "3rem 5rem 2rem", borderBottom: "1px solid var(--border)" }}>
+        <span className="badge" style={{ marginBottom: "0.75rem" }}>ZK CIRCUITS 1 & 2</span>
+        <h1 className="section-title">Verify Investor<br />Accreditation</h1>
+        <p className="section-desc" style={{ maxWidth: 540 }}>
+          Generate a zero-knowledge accredited investor proof locally. Your net worth and identity never leave this browser.
         </p>
       </div>
 
-      <div className="glass-card" style={{ padding: "2rem", marginBottom: "2rem" }}>
-        <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: "1.5rem", color: "#f8fafc" }}>
-          Step 1: Configure Private Financial Witnesses
-        </h2>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: "calc(100vh - 220px)" }}>
+        {/* Left: form */}
+        <div style={{ padding: "3rem 2.5rem 3rem 5rem", borderRight: "1px solid var(--border)" }}>
+          <form onSubmit={handleVerifyInvestor}>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.1rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "1.75rem" }}>
+              Step 1 — Private Financial Witnesses
+            </h2>
 
-        <form onSubmit={handleVerifyInvestor}>
-          <div style={{ marginBottom: "1.25rem" }}>
-            <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, color: "#cbd5e1", marginBottom: "0.5rem" }}>
-              Target Investment Fund ID (Public on-chain check)
-            </label>
-            <input
-              type="text"
-              className="input-field"
-              value={fundId}
-              onChange={e => setFundId(e.target.value)}
-              placeholder="e.g. fund_sequoia_growth_vi"
-              required
-            />
-          </div>
-
-          <div style={{ marginBottom: "1.25rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-              <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "#cbd5e1" }}>
-                Investor Private Secret Key (ZK Witness - Never Broadcast)
-              </label>
-              <button
-                type="button"
-                onClick={handleGenerateKey}
-                style={{ background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.4)", color: "#10b981", borderRadius: "6px", fontSize: "0.75rem", padding: "0.2rem 0.6rem", cursor: "pointer" }}
-              >
-                + Generate Secure Key
-              </button>
+            <div style={F}>
+              <label className="label">Target Fund ID</label>
+              <input className="input" value={fundId} onChange={e => setFundId(e.target.value)}
+                placeholder="e.g. fund_sequoia_growth_vi" />
             </div>
-            <input
-              type="password"
-              className="input-field"
-              value={investorSecretKey}
-              onChange={e => setInvestorSecretKey(e.target.value)}
-              placeholder="Enter private key or generate secure entropy"
-            />
-            <span style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "0.25rem", display: "block" }}>
-              Remains inside browser memory; never sent to RPC node or indexer.
-            </span>
-          </div>
 
-          <div style={{ marginBottom: "1.25rem" }}>
-            <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, color: "#cbd5e1", marginBottom: "0.5rem" }}>
-              CPA Financial Audit Report (ZK Witness Document Hash)
-            </label>
-            <input
-              type="text"
-              className="input-field"
-              value={cpaAuditDoc}
-              onChange={e => setCpaAuditDoc(e.target.value)}
-              placeholder="Paste CPA audit report SHA-256 hash or leaves blank for auto-generation"
-            />
-          </div>
-
-          <div style={{ marginBottom: "1.5rem" }}>
-            <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, color: "#cbd5e1", marginBottom: "0.5rem" }}>
-              Certified Net Worth in USD: <strong style={{ color: "#10b981" }}>${netWorthUsd.toLocaleString()}</strong>
-            </label>
-            <input
-              type="range"
-              min={1000000}
-              max={10000000}
-              step={250000}
-              value={netWorthUsd}
-              onChange={e => setNetWorthUsd(Number(e.target.value))}
-              style={{ width: "100%", accentColor: "#10b981" }}
-            />
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "#64748b" }}>
-              <span>$1.0M (Unaccredited)</span>
-              <span style={{ color: "#06b6d4" }}>$2.5M (SEC Accreditation Threshold)</span>
-              <span>$10.0M+ (High Net Worth)</span>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="btn-primary"
-            style={{ width: "100%", justifyContent: "center", padding: "0.85rem" }}
-            disabled={loading}
-          >
-            {loading ? "Generating ZK Proof & Submitting to Midnight..." : "Prove Accreditation & Anchor Commitment"}
-          </button>
-        </form>
-      </div>
-
-      {logs.length > 0 && (
-        <div className="terminal-box" style={{ marginBottom: "2rem" }}>
-          <div style={{ fontSize: "0.75rem", color: "#64748b", marginBottom: "0.75rem", fontWeight: 600, textTransform: "uppercase" }}>
-            Live SNARK Execution & Telemetry Log
-          </div>
-          {logs.map((l, i) => (
-            <div key={i} style={{ color: l.type === "error" ? "#f43f5e" : l.type === "success" ? "#10b981" : "#94a3b8", marginBottom: "0.25rem" }}>
-              {l.msg}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {result && (
-        <div className="glass-card" style={{ padding: "2rem", marginBottom: "2rem", border: "1px solid rgba(16, 185, 129, 0.4)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
-            <span style={{ fontSize: "1.5rem" }}>OK</span>
-            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#10b981" }}>
-              Accredited Investor Proof Verified & Committed
-            </h3>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.85rem" }}>
-            <div>
-              <span style={{ color: "#64748b" }}>Commitment Hash:</span>
-              <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.25rem" }}>
-                <code style={{ background: "rgba(0, 0, 0, 0.4)", padding: "0.4rem 0.6rem", borderRadius: "6px", color: "#06b6d4", wordBreak: "break-all", flex: 1 }}>
-                  {result.commitmentHex}
-                </code>
-                <button
-                  onClick={() => handleCopyCommitment(result.commitmentHex)}
-                  style={{ background: "#1e293b", border: "1px solid #334155", color: "#f8fafc", padding: "0.4rem 0.8rem", borderRadius: "6px", cursor: "pointer", fontSize: "0.75rem" }}
-                >
-                  {copied ? "Copied!" : "Copy"}
+            <div style={F}>
+              <label className="label">Investor Secret Key (256-bit)</label>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <input className="input" value={investorSecretKey} onChange={e => setInvestorSecretKey(e.target.value)}
+                  placeholder="Enter private key or generate entropy" style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem" }} />
+                <button type="button" onClick={handleGenerateKey} className="btn-outline" style={{ whiteSpace: "nowrap", padding: "0.55rem 0.9rem", fontSize: "0.78rem" }}>
+                  Generate
                 </button>
               </div>
             </div>
 
-            <div>
-              <span style={{ color: "#64748b" }}>Replay Protection Nullifier:</span>
-              <div style={{ marginTop: "0.25rem" }}>
-                <code style={{ background: "rgba(0, 0, 0, 0.4)", padding: "0.4rem 0.6rem", borderRadius: "6px", color: "#eab308", wordBreak: "break-all", display: "block" }}>
-                  {result.nullifierHex}
-                </code>
+            <div style={F}>
+              <label className="label">Net Worth (USD)</label>
+              <input className="input" type="number" value={netWorthUsd} onChange={e => setNetWorthUsd(Number(e.target.value))}
+                min={0} step={100000} />
+              <div style={{ fontSize: "0.72rem", color: "var(--fg-4)", marginTop: "0.3rem" }}>
+                Minimum threshold: $2,500,000 USD (asserted in ZK)
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "2rem", marginTop: "0.5rem" }}>
-              <div>
-                <span style={{ color: "#64748b" }}>Session:</span>
-                <span style={{ color: "#f8fafc", marginLeft: "0.5rem", fontWeight: 600 }}>Epoch #{result.sessionNumber}</span>
-              </div>
-              <div>
-                <span style={{ color: "#64748b" }}>Status:</span>
-                <span style={{ color: "#10b981", marginLeft: "0.5rem", fontWeight: 600 }}>CONFIRMED</span>
-              </div>
-              <div>
-                <span style={{ color: "#64748b" }}>Fee:</span>
-                <span style={{ color: "#f8fafc", marginLeft: "0.5rem" }}>{result.txFee} {result.txFeeAsset}</span>
-              </div>
+            <div style={F}>
+              <label className="label">CPA Audit Report Hash (optional)</label>
+              <input className="input" value={cpaAuditDoc} onChange={e => setCpaAuditDoc(e.target.value)}
+                placeholder="SHA-256 hash or leave blank for auto-generation" />
             </div>
 
-            <div style={{ marginTop: "1rem" }}>
-              <a
-                href={NETWORK_CONFIG.explorerUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-secondary"
-                style={{ fontSize: "0.8rem", display: "inline-flex" }}
-              >
-                View on Midnight Explorer
-              </a>
+            <button type="submit" className="btn-primary" disabled={loading}
+              style={{ width: "100%", justifyContent: "center", padding: "0.75rem", fontSize: "0.9rem", marginTop: "0.5rem" }}>
+              {loading ? "Generating ZK Proof..." : "Generate & Submit ZK Proof"}
+            </button>
+          </form>
+
+          {/* Verify commitment form */}
+          {claimedCommitment && (
+            <form onSubmit={handleVerifyCommitment} style={{ marginTop: "2rem", paddingTop: "2rem", borderTop: "1px solid var(--border)" }}>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.1rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "1.25rem" }}>
+                Step 2 — Verify On-Chain Commitment
+              </h2>
+              <div style={F}>
+                <label className="label">Commitment Hash</label>
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <input className="input" value={claimedCommitment} onChange={e => setClaimedCommitment(e.target.value)}
+                    style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem" }} />
+                  <button type="button" onClick={() => handleCopy(claimedCommitment)} className="btn-outline" style={{ padding: "0.55rem 0.9rem", fontSize: "0.78rem" }}>
+                    {copied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+              </div>
+              <button type="submit" className="btn-outline" disabled={verifyLoading}
+                style={{ width: "100%", justifyContent: "center", padding: "0.65rem" }}>
+                {verifyLoading ? "Verifying..." : "Verify Commitment On-Chain"}
+              </button>
+            </form>
+          )}
+        </div>
+
+        {/* Right: logs + result */}
+        <div style={{ padding: "3rem 5rem 3rem 2.5rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          {/* Terminal */}
+          <div>
+            <div style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--fg-3)", marginBottom: "0.5rem" }}>
+              ZK Circuit Log
             </div>
+            <div className="terminal" style={{ minHeight: 180 }}>
+              {logs.length === 0 ? (
+                <span style={{ color: "var(--fg-4)" }}>$ waiting for circuit execution...</span>
+              ) : logs.map((l, i) => (
+                <div key={i} className={`log-${l.type}`}>{l.msg}</div>
+              ))}
+            </div>
+          </div>
+
+          {/* Result */}
+          {result && (
+            <div className="card" style={{ border: "1.5px solid var(--fg)" }}>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: "1rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "1rem" }}>
+                Accreditation Result
+              </div>
+              {[
+                { label: "Commitment", val: result.commitmentHex },
+                { label: "Nullifier", val: result.nullifierHex },
+                { label: "Session", val: result.sessionNumber },
+                { label: "Tx Hash", val: result.txHash },
+                { label: "Circuit", val: result.circuit },
+              ].map(({ label, val }) => val && (
+                <div key={label} style={{ marginBottom: "0.75rem" }}>
+                  <div className="label" style={{ marginBottom: "0.2rem" }}>{label}</div>
+                  <code className="mono-text">{String(val)}</code>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {verifyResult && (
+            <div className="card" style={{ border: "1.5px solid var(--border-2)" }}>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: "1rem", fontWeight: 800, textTransform: "uppercase", marginBottom: "0.75rem" }}>
+                Verification Result
+              </div>
+              <code className="mono-text">{JSON.stringify(verifyResult, null, 2)}</code>
+            </div>
+          )}
+
+          {/* Info box */}
+          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "1.25rem" }}>
+            <div style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.5rem" }}>
+              Private Witnesses (never leave browser)
+            </div>
+            {["investorSecretKey()", "financialAuditProofHash()", "netWorthAmount()", "verificationProofNonce()", "fundManagerSigningKey()"].map(w => (
+              <div key={w} style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--fg-3)", lineHeight: 2 }}>
+                · {w}
+              </div>
+            ))}
           </div>
         </div>
-      )}
-
-      {/* Step 2: Public Verification Section */}
-      <div className="glass-card" style={{ padding: "2rem" }}>
-        <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: "0.5rem", color: "#f8fafc" }}>
-          Step 2: Public Proof Verification (Circuit 2)
-        </h2>
-        <p style={{ fontSize: "0.8rem", color: "#94a3b8", marginBottom: "1.25rem" }}>
-          Verify that an investor commitment is authentically anchored on the Midnight ledger without possessing any private financial information.
-        </p>
-
-        <form onSubmit={handleVerifyCommitment}>
-          <div style={{ marginBottom: "1rem" }}>
-            <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, color: "#cbd5e1", marginBottom: "0.5rem" }}>
-              Claimed Investor Commitment Hash
-            </label>
-            <input
-              type="text"
-              className="input-field"
-              value={claimedCommitment}
-              onChange={e => setClaimedCommitment(e.target.value)}
-              placeholder="0x..."
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="btn-secondary"
-            style={{ width: "100%", justifyContent: "center" }}
-            disabled={verifyLoading}
-          >
-            {verifyLoading ? "Verifying with Midnight Node..." : "Verify Commitment On-Chain"}
-          </button>
-        </form>
-
-        {verifyResult && (
-          <div style={{ marginTop: "1rem", padding: "1rem", background: "rgba(16, 185, 129, 0.1)", border: "1px solid rgba(16, 185, 129, 0.3)", borderRadius: "8px" }}>
-            <span style={{ color: "#10b981", fontWeight: 600 }}>Accreditation Proof Valid: </span>
-            <span style={{ color: "#f8fafc" }}>The commitment is validly anchored on the Midnight Preview Testnet ledger.</span>
-          </div>
-        )}
       </div>
     </div>
   );

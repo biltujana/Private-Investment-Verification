@@ -1,145 +1,190 @@
-import Link from 'next/link';
-import type { Metadata } from 'next';
-import { CONTRACT_ADDRESS, VERIFIED_DEPLOYMENT } from '@/lib/constants';
+import Link from "next/link";
+import type { Metadata } from "next";
+import { CONTRACT_ADDRESS, VERIFIED_DEPLOYMENT } from "@/lib/constants";
+import dynamic from "next/dynamic";
+
+// Load Three.js scene only client-side
+const ThreeScene = dynamic(() => import("@/components/ThreeScene"), { ssr: false });
 
 export const metadata: Metadata = {
-  title: 'Private Investment Verification | Zero-Knowledge Accredited Investor Portal on Midnight',
-  description: 'Prove accredited investor net worth qualifications and commit private capital using zero-knowledge proofs on the Midnight Network.',
+  title: "PIV — Private Investment Verification | Midnight Network ZK dApp",
+  description: "Prove accredited investor eligibility using zero-knowledge proofs on Midnight Network. No PII disclosed on-chain.",
 };
 
 export default function HomePage() {
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 1.5rem 5rem" }}>
-      {/* Hero Section */}
-      <section className="hero">
-        <div className="hero-badge">
-          <span>LIVE</span> Midnight Preview Testnet &bull; Level 3 Verified
+    <div>
+      {/* ── HERO ────────────────────────────────────── */}
+      <section style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        minHeight: "calc(100vh - 64px)",
+        borderBottom: "1px solid var(--border)",
+      }}>
+        {/* Left: typography */}
+        <div style={{
+          display: "flex", flexDirection: "column", justifyContent: "center",
+          padding: "5rem 3.5rem 5rem 5rem",
+          borderRight: "1px solid var(--border)",
+        }}>
+          <div style={{ marginBottom: "1.5rem" }}>
+            <span className="badge badge-black" style={{ marginBottom: "1.2rem" }}>
+              LIVE · Midnight Preview Testnet
+            </span>
+          </div>
+
+          <h1 className="hero-display" style={{ marginBottom: "1.5rem" }}>
+            PRIVATE.<br />
+            ZERO-<br />
+            KNOWLEDGE.<br />
+            VERIFIED.
+          </h1>
+
+          <p style={{
+            fontSize: "1.05rem",
+            color: "var(--fg-2)",
+            lineHeight: 1.65,
+            maxWidth: 460,
+            marginBottom: "2.5rem",
+          }}>
+            Prove accredited investor eligibility mathematically — without
+            disclosing net worth, bank balances, or identity on-chain.
+          </p>
+
+          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+            <Link href="/verify" className="btn-primary" style={{ fontSize: "0.9rem", padding: "0.65rem 1.5rem" }}>
+              Verify Accreditation
+            </Link>
+            <Link href="/explorer" className="btn-outline" style={{ fontSize: "0.9rem", padding: "0.65rem 1.5rem" }}>
+              Contract Explorer
+            </Link>
+          </div>
         </div>
-        <h1>Private Investment Verification</h1>
-        <p>
-          Prove <strong>accredited investor eligibility</strong> and commit capital using <strong>zero-knowledge proofs</strong> &mdash; without disclosing your net worth, bank balances, tax returns, or personal identity on-chain.
-        </p>
-        <div className="hero-actions">
-          <Link href="/verify" className="btn-primary" style={{ fontSize: "1rem", padding: "0.75rem 2rem" }}>
-            Verify Accreditation (ZK Proof)
-          </Link>
-          <Link href="/manager" className="btn-secondary" style={{ fontSize: "1rem", padding: "0.75rem 2rem" }}>
-            Fund Manager Console
-          </Link>
-          <Link href="/explorer" className="btn-secondary" style={{ fontSize: "1rem", padding: "0.75rem 2rem" }}>
-            Contract Explorer
-          </Link>
+
+        {/* Right: Three.js 3D */}
+        <div style={{ position: "relative", background: "var(--bg)" }}>
+          <ThreeScene />
         </div>
       </section>
 
-      {/* Key Metrics Grid */}
-      <section style={{ marginBottom: "3.5rem" }}>
-        <div className="stats-grid">
-          <div className="glass-card stat-card">
-            <div className="stat-value" style={{ color: "#3b82f6" }}>6</div>
-            <div className="stat-label">ZK Circuits</div>
-            <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "0.35rem" }}>Compact v0.23 logic</div>
-          </div>
-          <div className="glass-card stat-card">
-            <div className="stat-value" style={{ color: "#06b6d4" }}>9</div>
-            <div className="stat-label">Ledger Fields</div>
-            <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "0.35rem" }}>Public on-chain state</div>
-          </div>
-          <div className="glass-card stat-card">
-            <div className="stat-value" style={{ color: "#eab308" }}>5</div>
-            <div className="stat-label">Private Witnesses</div>
-            <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "0.35rem" }}>Client-side proving</div>
-          </div>
-          <div className="glass-card stat-card">
-            <div className="stat-value" style={{ color: "#10b981" }}>100%</div>
-            <div className="stat-label">ZK Privacy</div>
-            <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "0.35rem" }}>Zero PII disclosure</div>
-          </div>
+      {/* ── STATS ───────────────────────────────────── */}
+      <section style={{ borderBottom: "1px solid var(--border)" }}>
+        <div className="stats-grid" style={{ borderRadius: 0, border: "none", borderBottom: "none" }}>
+          {[
+            { value: "6",    label: "ZK Circuits",       sub: "Compact v0.23" },
+            { value: "9",    label: "Ledger Fields",      sub: "Public on-chain" },
+            { value: "34",   label: "Tests Passing",      sub: "Vitest suite" },
+            { value: "100%", label: "ZK Privacy",         sub: "Zero PII disclosed" },
+          ].map(({ value, label, sub }) => (
+            <div className="stat-card" key={label} style={{ borderRight: "1px solid var(--border)" }}>
+              <div className="stat-value">{value}</div>
+              <div className="stat-label">{label}</div>
+              <div className="stat-sub">{sub}</div>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Verified On-Chain Deployment Card */}
-      <section style={{ marginBottom: "3.5rem" }}>
-        <div className="glass-card" style={{ padding: "2rem", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-            <div>
-              <span className="badge badge-emerald" style={{ marginBottom: "0.5rem" }}>VERIFIED DEPLOYMENT</span>
-              <h3 style={{ fontSize: "1.2rem", fontWeight: 700, color: "#f8fafc" }}>
-                Active On-Chain Midnight Preview Contract
+      {/* ── ON-CHAIN DEPLOYMENT ─────────────────────── */}
+      <section style={{ padding: "5rem", borderBottom: "1px solid var(--border)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "2.5rem" }}>
+          <div>
+            <span className="badge" style={{ marginBottom: "0.75rem" }}>VERIFIED ON-CHAIN</span>
+            <h2 className="section-title">Active Midnight<br />Preview Contract</h2>
+          </div>
+          <a
+            href={VERIFIED_DEPLOYMENT.explorerUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-outline"
+            style={{ marginTop: "0.5rem", whiteSpace: "nowrap" }}
+          >
+            View on Explorer ↗
+          </a>
+        </div>
+
+        <div style={{
+          display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px",
+          background: "var(--border)", border: "1px solid var(--border)", borderRadius: "var(--radius)",
+          overflow: "hidden",
+        }}>
+          {[
+            { label: "Contract Address",      value: CONTRACT_ADDRESS },
+            { label: "Deployment Tx Hash",    value: VERIFIED_DEPLOYMENT.transactionHash },
+            { label: "Confirmed Block",       value: `Block #${VERIFIED_DEPLOYMENT.blockHeight} (ID #${VERIFIED_DEPLOYMENT.transactionId})` },
+            { label: "Network",               value: "Midnight Preview Testnet" },
+          ].map(({ label, value }) => (
+            <div key={label} style={{ background: "var(--card)", padding: "1.5rem" }}>
+              <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--fg-3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.4rem" }}>
+                {label}
+              </div>
+              <code className="mono-text" style={{ fontSize: "0.8rem" }}>{value}</code>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── FEATURES ────────────────────────────────── */}
+      <section style={{ padding: "5rem", borderBottom: "1px solid var(--border)" }}>
+        <div style={{ marginBottom: "3rem" }}>
+          <span className="badge" style={{ marginBottom: "0.75rem" }}>HOW IT WORKS</span>
+          <h2 className="section-title">Privacy Architecture</h2>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1px", background: "var(--border)" }}>
+          {[
+            {
+              num: "01",
+              title: "ZK Net Worth Proof",
+              desc: "Proves investor meets SEC accredited threshold (≥ $2.5M USD) without publishing financial balances or CPA documents on-chain.",
+            },
+            {
+              num: "02",
+              title: "Nullifier Replay Prevention",
+              desc: "Session-bound nullifier prevents proof reuse within funding epochs. lastNullifier tracked on-chain to eliminate double-spend.",
+            },
+            {
+              num: "03",
+              title: "Protected Fund Authority",
+              desc: "General Partner authority anchored with ZK signing key witnesses. Fund resets and accreditation changes are cryptographically gated.",
+            },
+          ].map(({ num, title, desc }) => (
+            <div key={num} style={{ background: "var(--card)", padding: "2.5rem 2rem" }}>
+              <div style={{
+                fontFamily: "var(--font-display)", fontSize: "4rem",
+                fontWeight: 900, color: "var(--bg-alt)", lineHeight: 1, marginBottom: "1rem",
+              }}>
+                {num}
+              </div>
+              <h3 style={{
+                fontFamily: "var(--font-display)", fontSize: "1.4rem",
+                fontWeight: 800, textTransform: "uppercase", marginBottom: "0.75rem",
+              }}>
+                {title}
               </h3>
+              <p style={{ fontSize: "0.875rem", color: "var(--fg-3)", lineHeight: 1.65 }}>{desc}</p>
             </div>
-            <a
-              href={VERIFIED_DEPLOYMENT.explorerUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-primary"
-              style={{ fontSize: "0.85rem" }}
-            >
-              View on Midnight Explorer
-            </a>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", fontSize: "0.85rem", marginTop: "1rem" }}>
-            <div>
-              <span style={{ color: "#64748b" }}>Contract Address:</span>
-              <code style={{ color: "#06b6d4", display: "block", marginTop: "0.25rem", wordBreak: "break-all" }}>
-                {CONTRACT_ADDRESS}
-              </code>
-            </div>
-            <div>
-              <span style={{ color: "#64748b" }}>Deployment Transaction:</span>
-              <code style={{ color: "#818cf8", display: "block", marginTop: "0.25rem", wordBreak: "break-all" }}>
-                {VERIFIED_DEPLOYMENT.transactionHash}
-              </code>
-            </div>
-            <div>
-              <span style={{ color: "#64748b" }}>Confirmed Block:</span>
-              <span style={{ color: "#f8fafc", display: "block", marginTop: "0.25rem", fontWeight: 600 }}>
-                Block #{VERIFIED_DEPLOYMENT.blockHeight} (ID #{VERIFIED_DEPLOYMENT.transactionId})
-              </span>
-            </div>
-            <div>
-              <span style={{ color: "#64748b" }}>Network Target:</span>
-              <span style={{ color: "#10b981", display: "block", marginTop: "0.25rem", fontWeight: 600 }}>
-                Midnight Preview Testnet (RPC + GraphQL Indexer)
-              </span>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* Architecture & Features */}
-      <section style={{ marginBottom: "3.5rem" }}>
-        <h2 style={{ fontSize: "1.4rem", fontWeight: 700, marginBottom: "1.5rem", color: "#f8fafc" }}>
-          Privacy Architecture & Cryptographic Guarantees
-        </h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.5rem" }}>
-          <div className="glass-card" style={{ padding: "1.75rem" }}>
-            <h3 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#10b981", marginBottom: "0.75rem" }}>
-              1. ZK Net Worth Boundary Enforcement
-            </h3>
-            <p style={{ fontSize: "0.85rem", color: "#94a3b8", lineHeight: 1.6 }}>
-              Proves in zero-knowledge that the investor meets the SEC accredited investor threshold (&ge; $2,500,000 USD) without publishing financial balances or CPA audit files.
-            </p>
-          </div>
-
-          <div className="glass-card" style={{ padding: "1.75rem" }}>
-            <h3 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#06b6d4", marginBottom: "0.75rem" }}>
-              2. Nullifier Replay-Prevention & Session Binding
-            </h3>
-            <p style={{ fontSize: "0.85rem", color: "#94a3b8", lineHeight: 1.6 }}>
-              Derives a session-bound nullifier (<code style={{ color: "#eab308" }}>lastNullifier</code>) that prevents proof reuse within the same funding epoch while allowing legitimate multi-round commitments.
-            </p>
-          </div>
-
-          <div className="glass-card" style={{ padding: "1.75rem" }}>
-            <h3 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#6366f1", marginBottom: "0.75rem" }}>
-              3. Protected Fund Manager Authority
-            </h3>
-            <p style={{ fontSize: "0.85rem", color: "#94a3b8", lineHeight: 1.6 }}>
-              General Partner authority is anchored on-chain with ZK signature witnesses. Unauthorized parties cannot reset funds or alter accreditation policies.
-            </p>
-          </div>
+      {/* ── PORTAL LINKS ────────────────────────────── */}
+      <section style={{ padding: "5rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1px", background: "var(--border)", border: "1px solid var(--border)", borderRadius: "var(--radius)", overflow: "hidden" }}>
+          {[
+            { href: "/verify",   label: "Accreditation Portal", desc: "Submit ZK investor eligibility proofs", tag: "ZK Circuits 1 & 2" },
+            { href: "/manager",  label: "Fund Manager Console", desc: "Anchor authority, revoke, rotate fund",   tag: "ZK Circuits 3–5" },
+            { href: "/explorer", label: "Contract Explorer",    desc: "Live on-chain state via GraphQL Indexer", tag: "Live Indexer API" },
+          ].map(({ href, label, desc, tag }) => (
+            <Link key={href} href={href} style={{ background: "var(--card)", padding: "2rem", display: "block", borderRight: "1px solid var(--border)", transition: "background 0.15s" }}>
+              <span className="badge" style={{ marginBottom: "1rem" }}>{tag}</span>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: "1.5rem", fontWeight: 800, textTransform: "uppercase", marginBottom: "0.5rem" }}>
+                {label}
+              </div>
+              <p style={{ fontSize: "0.85rem", color: "var(--fg-3)" }}>{desc}</p>
+              <div style={{ marginTop: "1.25rem", fontSize: "0.85rem", fontWeight: 600 }}>Open →</div>
+            </Link>
+          ))}
         </div>
       </section>
     </div>

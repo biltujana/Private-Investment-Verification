@@ -8,7 +8,7 @@ export default function Navbar({
   walletName,
   onConnect,
   onDisconnect,
-  connecting
+  connecting,
 }: {
   walletAddress: string | null;
   walletName?: string | null;
@@ -18,7 +18,6 @@ export default function Navbar({
 }) {
   const pathname = usePathname();
 
-  // Defensively coerce walletAddress to string — wallet APIs may return non-string types
   const addrStr = walletAddress
     ? typeof walletAddress === "string"
       ? walletAddress
@@ -26,69 +25,69 @@ export default function Navbar({
     : null;
 
   const shortAddr = addrStr && addrStr.length >= 6
-    ? `${addrStr.substring(0, 8)}...${addrStr.slice(-6)}`
+    ? `${addrStr.substring(0, 6)}...${addrStr.slice(-4)}`
     : addrStr || null;
+
+  const links = [
+    { href: "/",        label: "Dashboard" },
+    { href: "/verify",  label: "Accreditation" },
+    { href: "/manager", label: "Fund Manager" },
+    { href: "/explorer",label: "Explorer" },
+  ];
 
   return (
     <header className="nav">
+      {/* Brand */}
       <Link href="/" className="nav-brand">
-        <span style={{ color: "#10b981", fontWeight: 800 }}>PIV</span>
-        <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 400 }}>Midnight ZK</span>
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" style={{ flexShrink: 0 }}>
+          <rect width="22" height="22" rx="5" fill="#0A0A0A"/>
+          <path d="M6 11 L11 6 L16 11 L11 16 Z" fill="white"/>
+        </svg>
+        PIV<span className="dot">.</span>
       </Link>
-      <div className="nav-links">
-        <Link href="/" className={`nav-link ${pathname === "/" ? "active" : ""}`}>
-          Dashboard
-        </Link>
-        <Link href="/verify" className={`nav-link ${pathname === "/verify" ? "active" : ""}`}>
-          Accreditation Portal
-        </Link>
-        <Link href="/manager" className={`nav-link ${pathname === "/manager" ? "active" : ""}`}>
-          Fund Manager Console
-        </Link>
-        <Link href="/explorer" className={`nav-link ${pathname === "/explorer" ? "active" : ""}`}>
-          Explorer
-        </Link>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+
+      {/* Nav links */}
+      <nav className="nav-links">
+        {links.map(({ href, label }) => (
+          <Link
+            key={href}
+            href={href}
+            className={`nav-link${pathname === href ? " active" : ""}`}
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
+
+      {/* Wallet */}
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
         {addrStr ? (
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            {walletName && (
-              <span
-                style={{
-                  fontSize: "0.72rem",
-                  color: "#94a3b8",
-                  fontWeight: 500
-                }}
-              >
-                {walletName}
+          <>
+            <div style={{
+              display: "flex", alignItems: "center", gap: "0.5rem",
+              background: "var(--bg-alt)", border: "1px solid var(--border)",
+              borderRadius: "var(--radius-sm)", padding: "0.3rem 0.75rem",
+            }}>
+              <span style={{
+                width: 8, height: 8, borderRadius: "50%",
+                background: "#0A0A0A", display: "inline-block",
+              }} />
+              <span style={{ fontSize: "0.78rem", fontWeight: 600, fontFamily: "var(--font-mono)" }}>
+                {shortAddr}
               </span>
-            )}
-            <span
-              style={{
-                fontSize: "0.8rem",
-                background: "rgba(16, 185, 129, 0.15)",
-                border: "1px solid rgba(16, 185, 129, 0.4)",
-                color: "#10b981",
-                padding: "0.35rem 0.9rem",
-                borderRadius: "99px",
-                fontWeight: 700
-              }}
-            >
-              {shortAddr}
-            </span>
-            <button
-              onClick={onDisconnect}
-              className="btn-secondary"
-              style={{ padding: "0.35rem 0.9rem", fontSize: "0.78rem" }}
-            >
+              {walletName && (
+                <span style={{ fontSize: "0.72rem", color: "var(--fg-3)" }}>· {walletName}</span>
+              )}
+            </div>
+            <button onClick={onDisconnect} className="btn-outline" style={{ padding: "0.3rem 0.8rem", fontSize: "0.78rem" }}>
               Disconnect
             </button>
-          </div>
+          </>
         ) : (
           <button
             onClick={onConnect}
             className="btn-primary"
-            style={{ padding: "0.35rem 1.1rem", fontSize: "0.8rem" }}
+            style={{ padding: "0.42rem 1.1rem", fontSize: "0.83rem" }}
             disabled={connecting}
           >
             {connecting ? "Connecting..." : "Connect 1am Wallet"}

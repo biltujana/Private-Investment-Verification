@@ -39,128 +39,135 @@ export default function ExplorerPage() {
   };
 
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto", padding: "2rem 1.5rem 5rem" }}>
-      <div style={{ marginBottom: "2rem" }}>
-        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
-          <span className="badge badge-emerald">Live Indexer API</span>
-          <span className="badge badge-cyan">Midnight Preview</span>
-          <span className="badge badge-indigo">Actual GraphQL Reads</span>
+    <div>
+      {/* Header */}
+      <div style={{ padding: "3rem 5rem 2rem", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+        <div>
+          <span className="badge" style={{ marginBottom: "0.75rem" }}>LIVE INDEXER API</span>
+          <h1 className="section-title">Contract State<br />Explorer</h1>
+          <p className="section-desc" style={{ maxWidth: 480 }}>
+            Live zero-knowledge ledger state from the Midnight Preview GraphQL Indexer.
+            {lastRefreshed && <span style={{ color: "var(--fg-4)", marginLeft: "0.5rem" }}>· Last queried: {lastRefreshed}</span>}
+          </p>
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h1 className="section-title">Contract State Explorer</h1>
-          <button
-            onClick={fetchState}
-            className="btn-secondary"
-            style={{ fontSize: "0.8rem", padding: "0.4rem 0.9rem" }}
-            disabled={loading}
-          >
-            {loading ? "Reading Indexer..." : "Refresh State"}
-          </button>
-        </div>
-        <p className="section-desc">
-          Live zero-knowledge ledger state read directly from the official Midnight Preview GraphQL Indexer.
-          {lastRefreshed && <span style={{ color: "#64748b", marginLeft: "0.5rem" }}>Last queried: {lastRefreshed}</span>}
-        </p>
+        <button
+          onClick={fetchState}
+          className="btn-outline"
+          style={{ alignSelf: "flex-end", padding: "0.55rem 1.1rem", fontSize: "0.83rem" }}
+          disabled={loading}
+        >
+          {loading ? "Reading Indexer..." : "Refresh State"}
+        </button>
       </div>
 
-      {/* Verified On-Chain Deployment Evidence */}
-      <div className="glass-card" style={{ padding: "1.75rem", marginBottom: "1.5rem", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-          <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#10b981", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-            Verified On-Chain Deployment Evidence (Midnight Preview Testnet)
-          </div>
-          <span style={{ fontSize: "0.75rem", color: "#10b981", background: "rgba(16, 185, 129, 0.15)", padding: "0.2rem 0.6rem", borderRadius: "12px", fontWeight: 600 }}>
-            ON-CHAIN CONFIRMED
-          </span>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem", fontSize: "0.85rem" }}>
-          <div>
-            <div style={{ color: "#64748b", fontSize: "0.75rem" }}>Contract Address:</div>
-            <code style={{ color: "#06b6d4", wordBreak: "break-all" }}>{CONTRACT_ADDRESS}</code>
-          </div>
-          <div>
-            <div style={{ color: "#64748b", fontSize: "0.75rem" }}>Deployment Tx Hash:</div>
-            <code style={{ color: "#818cf8", wordBreak: "break-all" }}>{VERIFIED_DEPLOYMENT.transactionHash}</code>
-          </div>
-          <div>
-            <div style={{ color: "#64748b", fontSize: "0.75rem" }}>Transaction ID:</div>
-            <code style={{ color: "#f8fafc" }}>#{VERIFIED_DEPLOYMENT.transactionId}</code>
-          </div>
-          <div>
-            <div style={{ color: "#64748b", fontSize: "0.75rem" }}>Block Height & Hash:</div>
-            <code style={{ color: "#f8fafc" }}>Block #{VERIFIED_DEPLOYMENT.blockHeight} ({VERIFIED_DEPLOYMENT.blockHash.slice(0, 14)}...)</code>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: "1rem" }}>
-          <a
-            href={NETWORK_CONFIG.explorerUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-primary"
-            style={{ fontSize: "0.8rem", display: "inline-flex" }}
-          >
-            View on Midnight Explorer
-          </a>
-          <button
-            onClick={() => handleCopy(CONTRACT_ADDRESS)}
-            className="btn-secondary"
-            style={{ fontSize: "0.8rem" }}
-          >
-            {copied ? "Copied!" : "Copy Contract Address"}
-          </button>
-        </div>
-      </div>
-
-      {/* Public Ledger Schema with Live Values */}
-      <div className="glass-card" style={{ padding: "1.75rem", marginBottom: "2rem" }}>
-        <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#64748b", marginBottom: "1rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-          Public Ledger Fields (9 Live On-Chain Fields)
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-          {[
-            { field: "verifiedCount: Counter", val: onChainState?.verifiedCount ?? 1, desc: "Total verified accredited investor commitments", color: "#10b981" },
-            { field: "revokedCount: Counter", val: onChainState?.revokedCount ?? 0, desc: "Total disqualified / revoked investor claims", color: "#f43f5e" },
-            { field: "activeSession: Counter", val: onChainState?.activeSession ?? 1, desc: "Epoch nonce for capital call replay attack prevention", color: "#06b6d4" },
-            { field: "fundId: Bytes<32>", val: onChainState?.fundId ?? "fund_sequoia_growth_vi", desc: "Active investment fund offering identifier", color: "#6366f1" },
-            { field: "fundManagerCommitment: Bytes<32>", val: onChainState?.fundManagerCommitment ?? "0x98f6d2b58c7...", desc: "General Partner authority anchor derived from signing key", color: "#eab308" },
-            { field: "lastVerificationCommitment: Bytes<32>", val: onChainState?.lastVerificationCommitment ?? "0x3dbcf8a707...", desc: "Most recent ZK investor qualification commitment hash", color: "#10b981" },
-            { field: "lastRevokedCommitment: Bytes<32>", val: onChainState?.lastRevokedCommitment ?? "0x0000000000...", desc: "Most recent revoked investor hash", color: "#f43f5e" },
-            { field: "minimumNetWorthThreshold: Uint<32>", val: `$${(onChainState?.minimumNetWorthThreshold ?? 2500000).toLocaleString()} USD`, desc: "Minimum accredited net worth threshold ($2,500,000 USD)", color: "#06b6d4" },
-            { field: "lastNullifier: Bytes<32>", val: onChainState?.lastNullifier ?? "0x0000000000...", desc: "Replay-prevention nullifier enforcing single-use per session", color: "#eab308" },
-          ].map(f => (
-            <div key={f.field} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem 0", borderBottom: "1px solid rgba(255, 255, 255, 0.05)" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
-                <code style={{ fontSize: "0.8rem", color: f.color }}>{f.field}</code>
-                <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{f.desc}</span>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <code style={{ fontSize: "0.8rem", color: "#f8fafc", background: "rgba(0, 0, 0, 0.4)", padding: "0.2rem 0.5rem", borderRadius: "4px" }}>
-                  {String(f.val).slice(0, 20)}
-                </code>
-              </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: "calc(100vh - 220px)" }}>
+        {/* Left: deployment info + ledger state */}
+        <div style={{ padding: "3rem 2.5rem 3rem 5rem", borderRight: "1px solid var(--border)" }}>
+          {/* Deployment evidence */}
+          <div style={{ marginBottom: "2.5rem" }}>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: "1.1rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "1.25rem" }}>
+              Deployment Evidence
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Live Indexer GraphQL Response Inspector */}
-      <div className="glass-card" style={{ padding: "1.75rem" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-          <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-            Live Indexer GraphQL Response (Endpoint: {NETWORK_CONFIG.indexerUrl})
+            <div style={{ display: "flex", flexDirection: "column", gap: "1px", background: "var(--border)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
+              {[
+                { label: "Contract Address",  val: CONTRACT_ADDRESS },
+                { label: "Tx Hash",           val: VERIFIED_DEPLOYMENT.transactionHash },
+                { label: "Block Height",      val: `Block #${VERIFIED_DEPLOYMENT.blockHeight}` },
+                { label: "Transaction ID",    val: `#${VERIFIED_DEPLOYMENT.transactionId}` },
+                { label: "Network",           val: "Midnight Preview Testnet" },
+                { label: "GraphQL Indexer",   val: NETWORK_CONFIG.indexerUri },
+              ].map(({ label, val }) => (
+                <div key={label} style={{ background: "var(--card)", padding: "0.75rem 1rem", display: "grid", gridTemplateColumns: "140px 1fr", gap: "0.75rem", alignItems: "start" }}>
+                  <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--fg-3)", textTransform: "uppercase", letterSpacing: "0.05em", paddingTop: "0.05rem" }}>{label}</div>
+                  <code className="mono-text">{val}</code>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: "0.75rem" }}>
+              <a
+                href={VERIFIED_DEPLOYMENT.explorerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-outline"
+                style={{ fontSize: "0.8rem", padding: "0.45rem 0.9rem" }}
+              >
+                View on Midnight Explorer ↗
+              </a>
+            </div>
           </div>
-          <button
-            onClick={() => handleCopy(rawJson)}
-            style={{ background: "#1e293b", border: "1px solid #334155", color: "#f8fafc", padding: "0.2rem 0.6rem", borderRadius: "4px", fontSize: "0.75rem", cursor: "pointer" }}
-          >
-            {copied ? "Copied!" : "Copy JSON"}
-          </button>
+
+          {/* Ledger state */}
+          <div>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: "1.1rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "1.25rem" }}>
+              Live Ledger State
+            </div>
+            {loading && !onChainState ? (
+              <div style={{ color: "var(--fg-3)", fontSize: "0.85rem" }}>Reading from Midnight Preview Indexer...</div>
+            ) : onChainState ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "1px", background: "var(--border)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
+                {[
+                  { label: "Verified Count",    val: onChainState.verifiedCount?.toString() ?? "—" },
+                  { label: "Revoked Count",     val: onChainState.revokedCount?.toString() ?? "—" },
+                  { label: "Active Session",    val: onChainState.activeSession?.toString() ?? "—" },
+                  { label: "Fund ID",           val: onChainState.fundId ?? "—" },
+                  { label: "Min Threshold",     val: onChainState.minimumNetWorthThreshold ? `$${Number(onChainState.minimumNetWorthThreshold).toLocaleString()} USD` : "—" },
+                  { label: "Manager Commit.",   val: onChainState.fundManagerCommitment ?? "—" },
+                  { label: "Last Commitment",   val: onChainState.lastVerificationCommitment ?? "—" },
+                  { label: "Last Nullifier",    val: onChainState.lastNullifier ?? "—" },
+                ].map(({ label, val }) => (
+                  <div key={label} style={{ background: "var(--card)", padding: "0.75rem 1rem", display: "grid", gridTemplateColumns: "140px 1fr", gap: "0.75rem", alignItems: "start" }}>
+                    <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--fg-3)", textTransform: "uppercase", letterSpacing: "0.05em", paddingTop: "0.05rem" }}>{label}</div>
+                    <code className="mono-text">{val}</code>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ color: "var(--fg-3)", fontSize: "0.85rem" }}>No state available from indexer.</div>
+            )}
+          </div>
         </div>
-        <pre style={{ background: "#020617", padding: "1rem", borderRadius: "8px", color: "#38bdf8", fontSize: "0.78rem", overflowX: "auto", maxHeight: "300px" }}>
-          {rawJson || "Loading live state from Midnight Preview GraphQL indexer..."}
-        </pre>
+
+        {/* Right: raw JSON */}
+        <div style={{ padding: "3rem 5rem 3rem 2.5rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: "1.1rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              Raw GraphQL Response
+            </div>
+            {rawJson && (
+              <button onClick={() => handleCopy(rawJson)} className="btn-outline" style={{ fontSize: "0.78rem", padding: "0.35rem 0.8rem" }}>
+                {copied ? "Copied!" : "Copy JSON"}
+              </button>
+            )}
+          </div>
+
+          <div className="terminal" style={{ flex: 1, minHeight: 400, maxHeight: "none" }}>
+            {rawJson
+              ? <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{rawJson}</pre>
+              : <span style={{ color: "var(--fg-4)" }}>$ awaiting indexer response...</span>}
+          </div>
+
+          {/* Indexer info */}
+          <div className="card-sm">
+            <div style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.5rem" }}>
+              GraphQL Query (contract state)
+            </div>
+            <pre style={{ fontFamily: "var(--font-mono)", fontSize: "0.73rem", color: "var(--fg-3)", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+{`query GetContractState($addr: String!) {
+  contract(address: $addr) {
+    state {
+      verifiedCount
+      revokedCount
+      activeSession
+      fundId
+      fundManagerCommitment
+      lastNullifier
+      minimumNetWorthThreshold
+    }
+  }
+}`}
+            </pre>
+          </div>
+        </div>
       </div>
     </div>
   );
