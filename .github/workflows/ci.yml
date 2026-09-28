@@ -38,7 +38,7 @@ jobs:
           test -f managed/contract/index.js
           echo "All managed contract artifacts verified successfully."
 
-      - name: Run Vitest Unit & Integration Tests (34 Tests)
+      - name: Run Vitest Unit & Integration Tests (43 Tests)
         run: npm test
 
       - name: Build Next.js Web Platform

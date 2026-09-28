@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   InitialAPI,
   ConnectedAPI,
   WalletConnectedAPI
@@ -438,95 +438,95 @@ export class PrivateInvestmentVerificationClient {
       }`
     };
 
-    try {
-      const response = await fetch(this.networkConfig.indexerUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(graphqlQuery)
-      });
+    const response = await fetch(this.networkConfig.indexerUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(graphqlQuery)
+    });
 
-      if (response.ok) {
-        const json = await response.json();
-        const actionData = json?.data?.contractAction;
-        const blockData = json?.data?.block;
-
-        const currentBlockHeight = blockData?.height || CANONICAL_DEPLOYMENT.blockHeight;
-        const currentBlockHash = blockData?.hash ? "0x" + blockData.hash : CANONICAL_DEPLOYMENT.blockHash;
-        const rawState = actionData?.state || "";
-        const contractData = json?.data?.contract;
-        const txObj = actionData?.transaction;
-
-        const indexedTxs = contractData?.actions?.map((a) => ({
-          id: a.transaction?.id,
-          hash: a.transaction?.hash,
-          blockHeight: a.transaction?.block?.height,
-          blockHash: a.transaction?.block?.hash,
-          protocolVersion: a.transaction?.protocolVersion,
-          explorerUrl: `https://explorer.1am.xyz/tx/${a.transaction?.hash}`
-        })) || [];
-
-        if (indexedTxs.length === 0) {
-          indexedTxs.push({
-            id: CANONICAL_DEPLOYMENT.txId,
-            hash: CANONICAL_DEPLOYMENT.txHash,
-            blockHeight: CANONICAL_DEPLOYMENT.blockHeight,
-            blockHash: CANONICAL_DEPLOYMENT.blockHash,
-            protocolVersion: 1000000,
-            explorerUrl: `https://explorer.1am.xyz/tx/${CANONICAL_DEPLOYMENT.txHash}`
-          });
-        }
-
-        return {
-          address: "0x" + (actionData?.address || cleanAddress),
-          stateRaw: rawState,
-          verifiedCount: 1 + this.issuedCommitments.size,
-          revokedCount: this.revokedCommitments.size,
-          activeSession: this.currentActiveSession,
-          fundId: "fund_sequoia_growth_vi",
-          fundManagerCommitment: this.storedManagerCommitment || computeSha256(["piv:manager:authority:v1", "manager_seed"]),
-          trustedCpaAuthority: this.storedCpaAuthority || computeSha256(["piv:trusted:cpa:authority:v1"]),
-          lastVerificationCommitment: Array.from(this.issuedCommitments.keys()).pop() || CANONICAL_DEPLOYMENT.contractAddress,
-          lastRevokedCommitment: Array.from(this.revokedCommitments.values()).pop() || "0x0000000000000000000000000000000000000000000000000000000000000000",
-          minimumNetWorthThreshold: 2500000,
-          lastNullifier: this.lastNullifierOnChain,
-          deploymentTransaction: {
-            id: txObj?.id || CANONICAL_DEPLOYMENT.txId,
-            hash: txObj?.hash || CANONICAL_DEPLOYMENT.txHash,
-            block: {
-              height: txObj?.block?.height || CANONICAL_DEPLOYMENT.blockHeight,
-              hash: txObj?.block?.hash ? "0x" + txObj.block.hash : CANONICAL_DEPLOYMENT.blockHash
-            }
-          },
-          transactions: indexedTxs,
-          actionsCount: rawState.length > 0 ? (contractData?.actions?.length || 1) : 0
-        };
-      }
-    } catch (e) {
-      console.warn("[PIV] Indexer query notice:", e);
+    if (!response.ok) {
+      throw new Error(`[PIV] Midnight indexer returned HTTP ${response.status}. Cannot read on-chain contract state.`);
     }
 
+    const json = await response.json();
+    if (json?.errors?.length) {
+      throw new Error(`[PIV] Midnight indexer GraphQL error: ${json.errors[0]?.message}`);
+    }
+
+    const actionData = json?.data?.contractAction;
+    const blockData = json?.data?.block;
+    const contractData = json?.data?.contract;
+    const txObj = actionData?.transaction;
+
+    if (!actionData) {
+      throw new Error(`[PIV] Contract not found at address ${this.contractAddress} on Midnight Preview indexer. Verify the contract is deployed.`);
+    }
+
+    // Decode actual on-chain ledger state from the raw hex bytes returned by the indexer
+    const rawStateHex: string = actionData.state || "";
+    let onChainLedger: {
+      verifiedCount: bigint;
+      revokedCount: bigint;
+      activeSession: bigint;
+      fundId: Uint8Array;
+      fundManagerCommitment: Uint8Array;
+      trustedCpaAuthority: Uint8Array;
+      lastVerificationCommitment: Uint8Array;
+      lastRevokedCommitment: Uint8Array;
+      minimumNetWorthThreshold: number;
+      lastNullifier: Uint8Array;
+    } | null = null;
+
+    if (rawStateHex) {
+      try {
+        const stateBytes = Uint8Array.from(
+          rawStateHex.match(/.{1,2}/g)!.map((byte: string) => parseInt(byte, 16))
+        );
+        onChainLedger = ledger(stateBytes);
+      } catch (decodeErr) {
+        // State bytes present but ledger decode failed — surface as warning, continue with raw hex
+        console.warn("[PIV] Ledger state decode warning:", decodeErr);
+      }
+    }
+
+    const toHex = (b: Uint8Array | undefined): string =>
+      b ? "0x" + Array.from(b).map(x => x.toString(16).padStart(2, "0")).join("") : "0x" + "00".repeat(32);
+
+    const indexedTxs = contractData?.actions?.map((a: any) => ({
+      id: a.transaction?.id,
+      hash: a.transaction?.hash,
+      blockHeight: a.transaction?.block?.height,
+      blockHash: a.transaction?.block?.hash,
+      protocolVersion: a.transaction?.protocolVersion,
+      explorerUrl: `https://explorer.1am.xyz/tx/${a.transaction?.hash}`
+    })) || [];
+
     return {
-      address: CONTRACT_ADDRESS,
-      stateRaw: "midnight:contract-state[v6]:...",
-      verifiedCount: 1,
-      revokedCount: 0,
-      activeSession: this.currentActiveSession,
-      fundId: "fund_sequoia_growth_vi",
-      fundManagerCommitment: this.storedManagerCommitment || computeSha256(["piv:manager:authority:v1", "manager_seed"]),
-      trustedCpaAuthority: this.storedCpaAuthority || computeSha256(["piv:trusted:cpa:authority:v1"]),
-      lastVerificationCommitment: CANONICAL_DEPLOYMENT.contractAddress,
-      lastRevokedCommitment: "0x0000000000000000000000000000000000000000000000000000000000000000",
-      minimumNetWorthThreshold: 2500000,
-      lastNullifier: this.lastNullifierOnChain,
+      address: "0x" + (actionData.address || cleanAddress),
+      stateRaw: rawStateHex,
+      // Read actual counters from decoded on-chain ledger; fall back only if decode failed
+      verifiedCount: onChainLedger ? Number(onChainLedger.verifiedCount) : 0,
+      revokedCount: onChainLedger ? Number(onChainLedger.revokedCount) : 0,
+      activeSession: onChainLedger ? Number(onChainLedger.activeSession) : 0,
+      fundId: onChainLedger
+        ? new TextDecoder().decode(onChainLedger.fundId).replace(/\0+$/, "")
+        : "",
+      fundManagerCommitment: onChainLedger ? toHex(onChainLedger.fundManagerCommitment) : "0x" + "00".repeat(32),
+      trustedCpaAuthority: onChainLedger ? toHex(onChainLedger.trustedCpaAuthority) : "0x" + "00".repeat(32),
+      lastVerificationCommitment: onChainLedger ? toHex(onChainLedger.lastVerificationCommitment) : "0x" + "00".repeat(32),
+      lastRevokedCommitment: onChainLedger ? toHex(onChainLedger.lastRevokedCommitment) : "0x" + "00".repeat(32),
+      minimumNetWorthThreshold: onChainLedger ? onChainLedger.minimumNetWorthThreshold : 0,
+      lastNullifier: onChainLedger ? toHex(onChainLedger.lastNullifier) : "0x" + "00".repeat(32),
       deploymentTransaction: {
-        id: CANONICAL_DEPLOYMENT.blockHeight,
-        hash: CANONICAL_DEPLOYMENT.txHash,
+        id: txObj.id,
+        hash: txObj.hash,
         block: {
-          height: CANONICAL_DEPLOYMENT.blockHeight,
-          hash: CANONICAL_DEPLOYMENT.txHash
+          height: txObj.block.height,
+          hash: "0x" + txObj.block.hash
         }
       },
-      actionsCount: 1
+      transactions: indexedTxs,
+      actionsCount: contractData?.actions?.length ?? 0
     };
   }
 
@@ -545,7 +545,7 @@ export class PrivateInvestmentVerificationClient {
     return deployPIVContract(providers, initialFundId, initialThreshold);
   }
 
-﻿  public async submitCallTx(
+  public async submitCallTx(
     params: { contractAddress?: string; circuitId: string; args?: any[] } | string,
     circuitIdArg?: string,
     argsArg?: any[]
@@ -554,14 +554,23 @@ export class PrivateInvestmentVerificationClient {
     const args = typeof params === "object" ? (params.args || []) : (argsArg || []);
     const contractAddress = typeof params === "object" ? (params.contractAddress || this.contractAddress) : this.contractAddress;
 
-    if (this.walletApi && typeof this.walletApi.signData === "function") {
+    // Enforce: a connected Midnight wallet is required. No simulation fallback.
+    if (!this.walletApi || !this.isConnected) {
+      throw new Error(
+        `[PIV] Circuit '${circuitId}' requires a connected 1AM Wallet or Midnight Lace wallet. ` +
+        "Please connect your wallet before submitting a transaction."
+      );
+    }
+
+    // Gate transaction behind wallet sign approval dialog
+    if (typeof this.walletApi.signData === "function") {
       const txPayload = JSON.stringify({
         protocol: "Private Investment Verification (PIV)",
         network: "midnight-preview",
         contract: contractAddress,
         circuit: circuitId,
-        args: args.map(a => typeof a === "bigint" ? a.toString() : a),
-        signer: this.connectedAddress || "0xMidnightAccount",
+        args: args.map((a: any) => typeof a === "bigint" ? a.toString() : a),
+        signer: this.connectedAddress,
         timestamp: Date.now()
       });
 
@@ -575,43 +584,51 @@ export class PrivateInvestmentVerificationClient {
         if (msg.includes("reject") || msg.includes("cancel") || msg.includes("denied") || msg.includes("declined")) {
           throw new Error("Transaction rejected in 1AM Wallet. User cancelled the operation.");
         }
+        // Other wallet errors — rethrow
+        throw signErr;
       }
     }
 
+    // Submit the circuit call through the wallet's SDK-generated transaction
     let rawTxResult: any = null;
-    if (this.walletApi) {
-      if (typeof this.walletApi.submitCallTx === "function") {
-        try {
-          rawTxResult = await this.walletApi.submitCallTx({ contractAddress, circuitId, args });
-        } catch (e) {
-          console.warn("[Midnight] submitCallTx notice:", e);
-        }
-      } else if (typeof this.walletApi.callTx === "function") {
-        try {
-          rawTxResult = await this.walletApi.callTx({ contractAddress, circuitId, args });
-        } catch (e) {
-          console.warn("[Midnight] callTx notice:", e);
-        }
-      }
+    if (typeof this.walletApi.submitCallTx === "function") {
+      rawTxResult = await this.walletApi.submitCallTx({ contractAddress, circuitId, args });
+    } else if (typeof this.walletApi.callTx === "function") {
+      rawTxResult = await this.walletApi.callTx({ contractAddress, circuitId, args });
+    } else {
+      throw new Error(
+        "[PIV] Connected wallet does not implement submitCallTx() or callTx(). " +
+        "Please ensure you are using the 1AM Wallet extension version >= 1.3."
+      );
     }
 
-    const txId = rawTxResult?.public?.txId || rawTxResult?.txId || CANONICAL_DEPLOYMENT.txId;
-    const txHash = rawTxResult?.public?.txHash || rawTxResult?.txHash || rawTxResult?.hash || rawTxResult?.txId || rawTxResult?.public?.txId || CANONICAL_DEPLOYMENT.txHash;
-    const blockHeight = rawTxResult?.blockHeight || CANONICAL_DEPLOYMENT.blockHeight;
-    const blockHash = rawTxResult?.blockHash || CANONICAL_DEPLOYMENT.blockHash;
+    // Only report success after a real transaction receipt is confirmed from the wallet
+    if (!rawTxResult) {
+      throw new Error(`[PIV] Wallet returned no transaction receipt for circuit '${circuitId}'. Cannot confirm on-chain submission.`);
+    }
+
+    const txHash: string = rawTxResult?.public?.txHash || rawTxResult?.txHash || rawTxResult?.hash || rawTxResult?.public?.txId || rawTxResult?.txId;
+    const txId: string | number = rawTxResult?.public?.txId || rawTxResult?.txId || rawTxResult?.id;
+    const blockHeight: number = rawTxResult?.blockHeight || rawTxResult?.block?.height || rawTxResult?.public?.blockHeight;
+    const blockHash: string = rawTxResult?.blockHash || rawTxResult?.block?.hash || rawTxResult?.public?.blockHash || "";
+
+    if (!txHash) {
+      throw new Error(`[PIV] Wallet receipt for circuit '${circuitId}' is missing transaction hash. Raw receipt: ${JSON.stringify(rawTxResult)}`);
+    }
+
     const cleanTx = String(txHash).replace(/^0x/, "");
     const cleanContract = contractAddress.replace(/^0x/, "");
 
     return {
       txHash: String(txHash),
-      txId: txId,
-      blockHash: String(blockHash),
-      blockHeight: Number(blockHeight),
+      txId,
+      blockHash: blockHash ? String(blockHash) : undefined,
+      blockHeight: blockHeight ? Number(blockHeight) : undefined,
       status: "SUCCESS",
       circuitId,
       contractAddress,
       network: "Midnight Preview Testnet",
-      txFee: "0.0035",
+      txFee: rawTxResult?.fee || rawTxResult?.txFee || "0.0035",
       txFeeAsset: "tDUST",
       newFundId: typeof args[0] === "string" ? args[0] : undefined,
       newMinimumThreshold: typeof args[1] === "number" ? args[1] : undefined,
@@ -692,34 +709,33 @@ export class PrivateInvestmentVerificationClient {
     const clean = claimedCommitment.toLowerCase();
 
     if (this.revokedCommitments.has(clean)) {
+      // Revoked commitments are a local check — they do not require a wallet transaction
       return {
-        txHash: CANONICAL_DEPLOYMENT.txHash,
-        txId: CANONICAL_DEPLOYMENT.blockHeight,
+        txHash: "",
+        txId: "",
         status: "REVOKED",
         network: "Midnight Preview Testnet",
         circuitId: "verifyInvestmentCommitment",
         contractAddress: this.contractAddress,
         commitmentHex: claimedCommitment,
         matches: false,
-        txFee: "0.0012",
+        txFee: "0.0000",
         txFeeAsset: "tDUST"
       };
     }
 
-    const exists = !this.revokedCommitments.has(clean);
+    // Public commitment verification requires a wallet-signed transaction to submit to the circuit
+    const txResult = await this.submitCallTx({
+      contractAddress: this.contractAddress,
+      circuitId: "verifyInvestmentCommitment",
+      args: [claimedCommitment]
+    });
 
     return {
-      txHash: CANONICAL_DEPLOYMENT.txHash,
-      txId: CANONICAL_DEPLOYMENT.blockHeight,
-      status: "SUCCESS",
-      network: "Midnight Preview Testnet",
-      circuitId: "verifyInvestmentCommitment",
-      contractAddress: this.contractAddress,
+      ...txResult,
       commitmentHex: claimedCommitment,
-      matches: exists,
-      signedBy: this.connectedAddress || "0xMidnightVerifier",
-      txFee: "0.0012",
-      txFeeAsset: "tDUST"
+      matches: true,
+      signedBy: this.connectedAddress || undefined
     };
   }
 

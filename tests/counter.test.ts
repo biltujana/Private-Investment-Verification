@@ -147,8 +147,8 @@ describe('Private Investment Verification (PIV) - Compact v2 Smart Contract Suit
         expect(params.contractAddress).toBe(CONTRACT_ADDRESS);
         expect(params.circuitId).toBe("verifyInvestorEligibility");
         return {
-          txId: mockTxHash,
-          status: "SUCCESS",
+          txHash: mockTxHash,
+          txId: 70001,
           blockHash: "0x" + "b".repeat(64),
           blockHeight: 12345
         };
@@ -170,27 +170,29 @@ describe('Private Investment Verification (PIV) - Compact v2 Smart Contract Suit
   it('14. Client applyForScholarship, resetScholarship & incrementSession execution', async () => {
     const client = new PrivateInvestmentVerificationClient(CONTRACT_ADDRESS);
     const calls: string[] = [];
+    const baseTxHash = "0x" + "c".repeat(64);
     const mockWallet = {
       submitCallTx: async (params: any) => {
         calls.push(params.circuitId);
         return {
-          txId: "0x" + "c".repeat(64),
-          status: "SUCCESS"
+          txHash: baseTxHash,
+          txId: 70002,
+          blockHeight: 1010001
         };
       }
     };
     client.setWalletApi(mockWallet, "0xUserWalletAddress");
 
     const applyRes = await client.applyForScholarship("fund_sequoia_growth_vi");
-    expect(applyRes.txHash).toBe("0x" + "c".repeat(64));
+    expect(applyRes.txHash).toBe(baseTxHash);
     expect(calls).toContain("applyForScholarship");
 
     const resetRes = await client.resetScholarship("fund_new", 3000000);
-    expect(resetRes.txHash).toBe("0x" + "c".repeat(64));
+    expect(resetRes.txHash).toBe(baseTxHash);
     expect(calls).toContain("resetScholarship");
 
     const incRes = await client.incrementSession();
-    expect(incRes.txHash).toBe("0x" + "c".repeat(64));
+    expect(incRes.txHash).toBe(baseTxHash);
     expect(calls).toContain("incrementSession");
   });
   it('15. Genuine Preview deployment enforces strict ContractProviders (no catch-and-return fallback)', async () => {

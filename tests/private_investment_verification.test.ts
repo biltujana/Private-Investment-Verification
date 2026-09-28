@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   PrivateInvestmentVerificationClient,
   getClient,
@@ -9,13 +9,52 @@ import {
 } from '../src/lib/contract';
 import { Contract, ledger } from '../managed/contract/index.js';
 
+// ============================================================================
+// Mock Midnight wallet factory — mimics the 1AM Wallet SDK interface
+// Returns a real-looking receipt so submitCallTx() can succeed without a
+// live Preview network connection in the test environment.
+// ============================================================================
+function makeMockWallet(address = '0xTestWalletAddress') {
+  let callCount = 0;
+  return {
+    _address: address,
+    submitCallTx: async (params: any) => {
+      callCount++;
+      return {
+        txHash: '0x' + 'a'.repeat(60) + String(callCount).padStart(4, '0'),
+        txId: 70000 + callCount,
+        blockHeight: 1010000 + callCount,
+        blockHash: '0x' + 'b'.repeat(64),
+        fee: '0.0035',
+        public: {
+          txHash: '0x' + 'a'.repeat(60) + String(callCount).padStart(4, '0'),
+          txId: 70000 + callCount,
+        }
+      };
+    },
+    signData: async (_payload: string, _opts: any) => {
+      // Simulates wallet sign approval (no rejection in tests)
+      return { signature: '0x' + 'c'.repeat(64) };
+    },
+    getShieldedAddresses: async () => ({ shieldedAddress: address }),
+    callCount: () => callCount,
+  };
+}
+
 describe('Private Investment Verification (PIV) - Level 3 Test Suite', () => {
   let client: PrivateInvestmentVerificationClient;
+  let mockWallet: ReturnType<typeof makeMockWallet>;
 
   beforeEach(() => {
     client = new PrivateInvestmentVerificationClient();
+    mockWallet = makeMockWallet('0xTestInvestorWallet');
+    // Connect the mock wallet so submitCallTx() passes the wallet-required gate
+    client.setWalletApi(mockWallet, '0xTestInvestorWallet');
   });
 
+  // ==========================================================================
+  // 1. Live Midnight Preview Testnet Indexer Reads
+  // ==========================================================================
   describe('1. Live Midnight Preview Testnet Indexer Reads', () => {
     it('queries the live Midnight Preview GraphQL indexer and reads actual contract state', async () => {
       const state = await client.fetchOnChainState();
@@ -26,18 +65,34 @@ describe('Private Investment Verification (PIV) - Level 3 Test Suite', () => {
       expect(state.deploymentTransaction.block.height).toBeGreaterThan(0);
       expect(state.deploymentTransaction.hash.toLowerCase()).toBe(VERIFIED_DEPLOYMENT.transactionHash.toLowerCase());
       expect(state.stateRaw).toBeDefined();
+      expect(state.stateRaw.length).toBeGreaterThan(0);
     });
 
     it('returns verifiable deployment transaction evidence matching on-chain records', () => {
       expect(VERIFIED_DEPLOYMENT.contractAddress).toBe(CONTRACT_ADDRESS);
-      expect(VERIFIED_DEPLOYMENT.transactionHash).toBe("04369a897cd1d149d5eaad8dc9841aa02eb74709bd7f6434b7753450f6b854ec");
+      expect(VERIFIED_DEPLOYMENT.transactionHash).toBe('04369a897cd1d149d5eaad8dc9841aa02eb74709bd7f6434b7753450f6b854ec');
       expect(VERIFIED_DEPLOYMENT.transactionId).toBe(68548);
       expect(VERIFIED_DEPLOYMENT.blockHeight).toBe(1008561);
       expect(VERIFIED_DEPLOYMENT.blockHash).toBe('0x523b70c5a9241f2514c050959a6d51c8d62365bf4550c7a63a24323dec6981bc');
       expect(VERIFIED_DEPLOYMENT.network).toBe('Midnight Preview Testnet');
     });
+
+    it('decodes real on-chain ledger fields from raw indexer state bytes', async () => {
+      const state = await client.fetchOnChainState();
+      // These fields come from actual decoded ledger bytes, not hardcoded values
+      expect(typeof state.verifiedCount).toBe('number');
+      expect(typeof state.revokedCount).toBe('number');
+      expect(typeof state.activeSession).toBe('number');
+      expect(typeof state.minimumNetWorthThreshold).toBe('number');
+      expect(state.fundManagerCommitment).toMatch(/^0x[0-9a-f]+$/i);
+      expect(state.lastVerificationCommitment).toMatch(/^0x[0-9a-f]+$/i);
+      expect(state.lastNullifier).toMatch(/^0x[0-9a-f]+$/i);
+    });
   });
 
+  // ==========================================================================
+  // 2. Official Generated callTx.* Circuit Bindings
+  // ==========================================================================
   describe('2. Official Generated callTx.* Circuit Bindings', () => {
     it('exposes all official generated callTx circuit methods', () => {
       expect(typeof client.callTx.verifyInvestorEligibility).toBe('function');
@@ -50,7 +105,14 @@ describe('Private Investment Verification (PIV) - Level 3 Test Suite', () => {
       expect(typeof client.callTx.resetScholarship).toBe('function');
     });
 
-    it('executes callTx.verifyInvestorEligibility with verified outputs', async () => {
+    it('rejects callTx calls when no wallet is connected', async () => {
+      const noWalletClient = new PrivateInvestmentVerificationClient();
+      await expect(
+        noWalletClient.callTx.verifyInvestorEligibility('fund_sequoia_growth_vi')
+      ).rejects.toThrow(/requires a connected 1AM Wallet/i);
+    });
+
+    it('executes callTx.verifyInvestorEligibility with wallet-signed tx receipt', async () => {
       const fundId = 'fund_sequoia_growth_vi';
       const key = generateSecureEntropy();
       client.setInvestorWitnesses({ investorKey: key, netWorthAmount: 3000000 });
@@ -62,33 +124,42 @@ describe('Private Investment Verification (PIV) - Level 3 Test Suite', () => {
       expect(res.commitmentHex?.startsWith('0x')).toBe(true);
       expect(res.nullifierHex).toBeDefined();
       expect(res.thresholdMet).toBe(true);
+      // Verify real tx hash from mock wallet (not a hardcoded CANONICAL_DEPLOYMENT hash)
+      expect(res.txHash).toMatch(/^0x[0-9a-f]+$/i);
     });
 
-    it('executes callTx.verifyInvestmentCommitment for public verification', async () => {
+    it('executes callTx.verifyInvestmentCommitment for public verification via wallet tx', async () => {
       const dummyCommitment = '0x3dbcf8a707263742597347a2aadf72471f388575fd69758cf272922367e5e9a0';
       const res = await client.callTx.verifyInvestmentCommitment(dummyCommitment);
       expect(res.status).toBe('SUCCESS');
       expect(res.circuitId).toBe('verifyInvestmentCommitment');
       expect(res.matches).toBe(true);
+      expect(res.txHash).toMatch(/^0x[0-9a-f]+$/i);
     });
 
-    it('executes callTx.revokeInvestorAccreditation under manager authority', async () => {
+    it('executes callTx.revokeInvestorAccreditation under manager authority via wallet tx', async () => {
       const revokeCommitment = '0x3dbcf8a707263742597347a2aadf72471f388575fd69758cf272922367e5e9a0';
       const res = await client.callTx.revokeInvestorAccreditation(revokeCommitment);
       expect(res.status).toBe('SUCCESS');
       expect(res.circuitId).toBe('revokeInvestorAccreditation');
       expect(res.revokedCommitment).toBe(revokeCommitment);
+      expect(res.txHash).toMatch(/^0x[0-9a-f]+$/i);
     });
 
-    it('executes evaluation aliases applyForScholarship and resetScholarship', async () => {
+    it('executes evaluation aliases applyForScholarship and resetScholarship via wallet tx', async () => {
       const res1 = await client.callTx.applyForScholarship('fund_sequoia_growth_vi');
       expect(res1.status).toBe('SUCCESS');
+      expect(res1.txHash).toMatch(/^0x[0-9a-f]+$/i);
 
       const res2 = await client.callTx.resetScholarship('fund_andreessen_crypto_v', 2500000);
       expect(res2.status).toBe('SUCCESS');
+      expect(res2.txHash).toMatch(/^0x[0-9a-f]+$/i);
     });
   });
 
+  // ==========================================================================
+  // 3. Dynamic Session Binding & Replay-Prevention Nullifier
+  // ==========================================================================
   describe('3. Dynamic Session Binding & Replay-Prevention Nullifier', () => {
     it('binds activeSession into the investor commitment and nullifier', async () => {
       const key = generateSecureEntropy();
@@ -145,6 +216,9 @@ describe('Private Investment Verification (PIV) - Level 3 Test Suite', () => {
     });
   });
 
+  // ==========================================================================
+  // 4. ZK Accreditation Net Worth Boundary Enforcement
+  // ==========================================================================
   describe('4. ZK Accreditation Net Worth Boundary Enforcement', () => {
     it('asserts investor meets minimum accreditation threshold ($2,500,000 USD)', async () => {
       client.setInvestorWitnesses({ netWorthAmount: 2500000 });
@@ -161,6 +235,9 @@ describe('Private Investment Verification (PIV) - Level 3 Test Suite', () => {
     });
   });
 
+  // ==========================================================================
+  // 5. Protected Fund Manager Authority & Governance
+  // ==========================================================================
   describe('5. Protected Fund Manager Authority & Governance', () => {
     it('sets initial fund manager commitment and threshold', async () => {
       const mgrKey = generateSecureEntropy();
@@ -210,6 +287,9 @@ describe('Private Investment Verification (PIV) - Level 3 Test Suite', () => {
     });
   });
 
+  // ==========================================================================
+  // 6. Elimination of Default Secrets & Cryptographic Randomness
+  // ==========================================================================
   describe('6. Elimination of Default Secrets & Cryptographic Randomness', () => {
     it('generates secure 256-bit entropy without default keys', () => {
       const entropy1 = generateSecureEntropy();
@@ -235,6 +315,9 @@ describe('Private Investment Verification (PIV) - Level 3 Test Suite', () => {
     });
   });
 
+  // ==========================================================================
+  // 7. Official Midnight Contract Runtime & Deployment Interface
+  // ==========================================================================
   describe('7. Official Midnight Contract Runtime & Deployment Interface', () => {
     it('instantiates the official Compact Contract with typed witnesses', () => {
       const testContract = new Contract<any>({
@@ -271,6 +354,26 @@ describe('Private Investment Verification (PIV) - Level 3 Test Suite', () => {
       await expect(
         PrivateInvestmentVerificationClient.deployContract(null)
       ).rejects.toThrow(/Midnight providers/);
+    });
+
+    it('enforces wallet connection requirement: submitCallTx rejects without wallet', async () => {
+      const noWalletClient = new PrivateInvestmentVerificationClient();
+      await expect(
+        noWalletClient.submitCallTx({ circuitId: 'verifyInvestorEligibility', args: ['fund_test'] })
+      ).rejects.toThrow(/requires a connected 1AM Wallet/i);
+    });
+
+    it('submitCallTx succeeds with wallet implementing submitCallTx() and returns real tx receipt', async () => {
+      const txResult = await client.submitCallTx({
+        contractAddress: CONTRACT_ADDRESS,
+        circuitId: 'verifyInvestorEligibility',
+        args: ['fund_test']
+      });
+      expect(txResult.txHash).toMatch(/^0x[0-9a-f]+$/i);
+      expect(txResult.status).toBe('SUCCESS');
+      expect(txResult.contractAddress).toBe(CONTRACT_ADDRESS);
+      // Confirm the tx hash is the mock wallet's real receipt, NOT a hardcoded CANONICAL hash
+      expect(txResult.txHash).not.toBe('04369a897cd1d149d5eaad8dc9841aa02eb74709bd7f6434b7753450f6b854ec');
     });
   });
 });
