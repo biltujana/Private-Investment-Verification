@@ -6,17 +6,21 @@ export const CONTRACT_ADDRESS =
 
 export const CANONICAL_DEPLOYMENT = {
   contractAddress: CONTRACT_ADDRESS,
-  txHash: CONTRACT_ADDRESS,
-  blockHeight: 204891,
+  txHash: "04369a897cd1d149d5eaad8dc9841aa02eb74709bd7f6434b7753450f6b854ec",
+  txId: 68548,
+  blockHeight: 1008561,
+  blockHash: "0x523b70c5a9241f2514c050959a6d51c8d62365bf4550c7a63a24323dec6981bc",
   network: "Midnight Preview Testnet",
   rawStateBytes: 3478,
-  explorerUrl: "https://preview.midnightexplorer.com/contracts/" + CONTRACT_ADDRESS,
+  explorerUrl: "https://explorer.1am.xyz/contract/" + CONTRACT_ADDRESS.replace(/^0x/, ""),
+  txExplorerUrl: "https://explorer.1am.xyz/tx/04369a897cd1d149d5eaad8dc9841aa02eb74709bd7f6434b7753450f6b854ec",
+  midnightExplorerUrl: "https://preview.midnightexplorer.com/contracts/" + CONTRACT_ADDRESS,
   indexerUrl: "https://indexer.preview.midnight.network/api/v4/graphql",
   rpcUrl: "https://rpc.preview.midnight.network"
 };
 
 export async function deployPIVContract(
-  providers,
+  providers: any,
   initialFundId = "fund_sequoia_growth_vi",
   initialThreshold = 2500000
 ) {

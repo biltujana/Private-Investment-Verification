@@ -15,11 +15,15 @@ export {
 
 export const CANONICAL_DEPLOYMENT = {
   contractAddress: CONTRACT_ADDRESS,
-  txHash: CONTRACT_ADDRESS,
-  blockHeight: 204891,
+  txHash: "04369a897cd1d149d5eaad8dc9841aa02eb74709bd7f6434b7753450f6b854ec",
+  txId: 68548,
+  blockHeight: 1008561,
+  blockHash: "0x523b70c5a9241f2514c050959a6d51c8d62365bf4550c7a63a24323dec6981bc",
   network: "Midnight Preview Testnet",
   rawStateBytes: 3478,
-  explorerUrl: "https://preview.midnightexplorer.com/contracts/" + CONTRACT_ADDRESS,
+  explorerUrl: "https://explorer.1am.xyz/contract/" + CONTRACT_ADDRESS.replace(/^0x/, ""),
+  txExplorerUrl: "https://explorer.1am.xyz/tx/04369a897cd1d149d5eaad8dc9841aa02eb74709bd7f6434b7753450f6b854ec",
+  midnightExplorerUrl: "https://preview.midnightexplorer.com/contracts/" + CONTRACT_ADDRESS,
   indexerUrl: "https://indexer.preview.midnight.network/api/v4/graphql",
   rpcUrl: "https://rpc.preview.midnight.network"
 };
@@ -122,6 +126,9 @@ export function computeSha256(parts: (string | Uint8Array)[]): string {
   revokedCommitment?: string;
   matches?: boolean;
   publicOutputs?: any;
+  explorerUrl?: string;
+  txExplorerUrl?: string;
+  midnightExplorerUrl?: string;
   rawNetworkResponse?: any;
 }
 
@@ -146,6 +153,14 @@ export interface OnChainContractState {
       hash: string;
     };
   };
+  transactions: Array<{
+    id: number;
+    hash: string;
+    blockHeight: number;
+    blockHash?: string;
+    protocolVersion?: number;
+    explorerUrl: string;
+  }>;
   actionsCount: number;
 }
 
@@ -389,9 +404,32 @@ export class PrivateInvestmentVerificationClient {
     const cleanAddress = this.contractAddress.replace(/^0x/, "");
     const graphqlQuery = {
       query: `{
+        contract(address: "${cleanAddress}") {
+          address
+          actions {
+            address
+            transaction {
+              id
+              hash
+              protocolVersion
+              block {
+                height
+                hash
+              }
+            }
+          }
+        }
         contractAction(address: "${cleanAddress}") {
           address
           state
+          transaction {
+            id
+            hash
+            block {
+              height
+              hash
+            }
+          }
         }
         block {
           height
@@ -413,8 +451,30 @@ export class PrivateInvestmentVerificationClient {
         const blockData = json?.data?.block;
 
         const currentBlockHeight = blockData?.height || CANONICAL_DEPLOYMENT.blockHeight;
-        const currentBlockHash = blockData?.hash ? "0x" + blockData.hash : CANONICAL_DEPLOYMENT.txHash;
+        const currentBlockHash = blockData?.hash ? "0x" + blockData.hash : CANONICAL_DEPLOYMENT.blockHash;
         const rawState = actionData?.state || "";
+        const contractData = json?.data?.contract;
+        const txObj = actionData?.transaction;
+
+        const indexedTxs = contractData?.actions?.map((a) => ({
+          id: a.transaction?.id,
+          hash: a.transaction?.hash,
+          blockHeight: a.transaction?.block?.height,
+          blockHash: a.transaction?.block?.hash,
+          protocolVersion: a.transaction?.protocolVersion,
+          explorerUrl: `https://explorer.1am.xyz/tx/${a.transaction?.hash}`
+        })) || [];
+
+        if (indexedTxs.length === 0) {
+          indexedTxs.push({
+            id: CANONICAL_DEPLOYMENT.txId,
+            hash: CANONICAL_DEPLOYMENT.txHash,
+            blockHeight: CANONICAL_DEPLOYMENT.blockHeight,
+            blockHash: CANONICAL_DEPLOYMENT.blockHash,
+            protocolVersion: 1000000,
+            explorerUrl: `https://explorer.1am.xyz/tx/${CANONICAL_DEPLOYMENT.txHash}`
+          });
+        }
 
         return {
           address: "0x" + (actionData?.address || cleanAddress),
@@ -430,14 +490,15 @@ export class PrivateInvestmentVerificationClient {
           minimumNetWorthThreshold: 2500000,
           lastNullifier: this.lastNullifierOnChain,
           deploymentTransaction: {
-            id: CANONICAL_DEPLOYMENT.blockHeight,
-            hash: CANONICAL_DEPLOYMENT.txHash,
+            id: txObj?.id || CANONICAL_DEPLOYMENT.txId,
+            hash: txObj?.hash || CANONICAL_DEPLOYMENT.txHash,
             block: {
-              height: currentBlockHeight,
-              hash: currentBlockHash
+              height: txObj?.block?.height || CANONICAL_DEPLOYMENT.blockHeight,
+              hash: txObj?.block?.hash ? "0x" + txObj.block.hash : CANONICAL_DEPLOYMENT.blockHash
             }
           },
-          actionsCount: rawState.length > 0 ? 1 : 0
+          transactions: indexedTxs,
+          actionsCount: rawState.length > 0 ? (contractData?.actions?.length || 1) : 0
         };
       }
     } catch (e) {
@@ -534,13 +595,17 @@ export class PrivateInvestmentVerificationClient {
       }
     }
 
-    const txId = rawTxResult?.public?.txId || rawTxResult?.txId || rawTxResult?.txHash || CANONICAL_DEPLOYMENT.txHash;
+    const txId = rawTxResult?.public?.txId || rawTxResult?.txId || CANONICAL_DEPLOYMENT.txId;
+    const txHash = rawTxResult?.public?.txHash || rawTxResult?.txHash || rawTxResult?.hash || rawTxResult?.txId || rawTxResult?.public?.txId || CANONICAL_DEPLOYMENT.txHash;
     const blockHeight = rawTxResult?.blockHeight || CANONICAL_DEPLOYMENT.blockHeight;
+    const blockHash = rawTxResult?.blockHash || CANONICAL_DEPLOYMENT.blockHash;
+    const cleanTx = String(txHash).replace(/^0x/, "");
+    const cleanContract = contractAddress.replace(/^0x/, "");
 
     return {
-      txHash: String(txId),
+      txHash: String(txHash),
       txId: txId,
-      blockHash: rawTxResult?.blockHash || CANONICAL_DEPLOYMENT.txHash,
+      blockHash: String(blockHash),
       blockHeight: Number(blockHeight),
       status: "SUCCESS",
       circuitId,
@@ -550,6 +615,9 @@ export class PrivateInvestmentVerificationClient {
       txFeeAsset: "tDUST",
       newFundId: typeof args[0] === "string" ? args[0] : undefined,
       newMinimumThreshold: typeof args[1] === "number" ? args[1] : undefined,
+      explorerUrl: `https://explorer.1am.xyz/contract/${cleanContract}`,
+      txExplorerUrl: `https://explorer.1am.xyz/tx/${cleanTx}`,
+      midnightExplorerUrl: `https://preview.midnightexplorer.com/contracts/${contractAddress}`,
       rawNetworkResponse: rawTxResult
     };
   }

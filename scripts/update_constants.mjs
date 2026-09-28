@@ -1,4 +1,6 @@
-// ============================================================================
+﻿import fs from "fs";
+
+const content = `// ============================================================================
 // VERIFIED ON-CHAIN DEPLOYMENT COORDINATES (MIDNIGHT PREVIEW TESTNET)
 // ============================================================================
 export const CONTRACT_ADDRESS = "0xf300c8ef23885f1cc04e6879ec5085f0845eff81c79d5ef6066f176af11df09f";
@@ -38,3 +40,7 @@ export const NETWORK_CONFIG: NetworkConfiguration = {
   txExplorerUrl: VERIFIED_DEPLOYMENT.txExplorerUrl,
   midnightExplorerUrl: VERIFIED_DEPLOYMENT.midnightExplorerUrl,
 };
+`;
+
+fs.writeFileSync("src/lib/constants.ts", content, "utf8");
+console.log("constants.ts updated successfully");
