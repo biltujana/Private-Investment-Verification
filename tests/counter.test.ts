@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Contract, ledger } from '../managed/contract/index.js';
 import { PrivateInvestmentVerificationClient, CONTRACT_ADDRESS } from '../src/lib/contract';
+import { deployPIVContract, CANONICAL_DEPLOYMENT } from '../src/integration/deploy';
 
 describe('Private Investment Verification (PIV) - Compact v2 Smart Contract Suite', () => {
   const dummyContext = {
@@ -191,5 +192,84 @@ describe('Private Investment Verification (PIV) - Compact v2 Smart Contract Suit
     const incRes = await client.incrementSession();
     expect(incRes.txHash).toBe("0x" + "c".repeat(64));
     expect(calls).toContain("incrementSession");
+  });
+  it('15. Genuine Preview deployment enforces strict ContractProviders (no catch-and-return fallback)', async () => {
+    await expect(deployPIVContract(undefined as any)).rejects.toThrow(
+      /ContractProviders required for genuine Midnight deployment/i
+    );
+    expect(CANONICAL_DEPLOYMENT.contractAddress).toBe(CONTRACT_ADDRESS);
+    expect(CANONICAL_DEPLOYMENT.network).toBe('Midnight Preview Testnet');
+  });
+
+  it('16. Trusted CPA attestation enforcement inside Contract circuit', () => {
+    const witnesses = createWitnesses();
+    const contract = new Contract(witnesses);
+    // Set trusted CPA authority
+    const trustedCpa = new Uint8Array(32).fill(77);
+    contract.circuits.setTrustedCpaAuthority(dummyContext as any, trustedCpa);
+
+    // Witness with mismatching CPA authority should throw CompactError
+    const invalidWitnesses = {
+      ...witnesses,
+      cpaIssuerPublicKey: () => [{}, new Uint8Array(32).fill(88)]
+    };
+    const badContract = new Contract(invalidWitnesses);
+    badContract.circuits.setTrustedCpaAuthority(dummyContext as any, trustedCpa);
+
+    expect(() => {
+      badContract.circuits.verifyInvestorEligibility(dummyContext as any, new Uint8Array(32).fill(1));
+    }).toThrow(/Untrusted CPA attestation authority/i);
+  });
+
+  it('17. Complete nullifier replay attack prevention in same session', () => {
+    const witnesses = createWitnesses();
+    const contract = new Contract(witnesses);
+    const fundId = new Uint8Array(32).fill(5);
+
+    // First eligibility verification succeeds
+    const res1 = contract.circuits.verifyInvestorEligibility(dummyContext as any, fundId);
+    expect(res1.result).toBeInstanceOf(Uint8Array);
+
+    // Second eligibility verification in the SAME session must throw replay error
+    expect(() => {
+      contract.circuits.verifyInvestorEligibility(dummyContext as any, fundId);
+    }).toThrow(/Replay attack detected/i);
+
+    // After session increment, new proof is accepted
+    contract.circuits.incrementSession(dummyContext as any);
+    const res2 = contract.circuits.verifyInvestorEligibility(dummyContext as any, fundId);
+    expect(res2.result).toBeInstanceOf(Uint8Array);
+  });
+
+  it('18. In-Contract revocation check disqualifies revoked commitment', () => {
+    const witnesses = createWitnesses();
+    const contract = new Contract(witnesses);
+    const fundId = new Uint8Array(32).fill(5);
+
+    const res = contract.circuits.verifyInvestorEligibility(dummyContext as any, fundId);
+    const commitment = res.result;
+
+    // Initially valid
+    const check1 = contract.circuits.verifyInvestmentCommitment(dummyContext as any, commitment);
+    expect(check1.result).toBe(true);
+
+    // Manager revokes the commitment
+    contract.circuits.revokeInvestorAccreditation(dummyContext as any, commitment);
+
+    // After revocation, verifyInvestmentCommitment MUST return false
+    const check2 = contract.circuits.verifyInvestmentCommitment(dummyContext as any, commitment);
+    expect(check2.result).toBe(false);
+  });
+
+  it('19. Authenticated fund manager initialization requires valid genesis secret', () => {
+    const invalidWitnesses = {
+      ...createWitnesses(),
+      managerGenesisSecret: () => [{}, new Uint8Array(32).fill(99)]
+    };
+    const badContract = new Contract(invalidWitnesses);
+
+    expect(() => {
+      badContract.circuits.setFundManagerCommitment(dummyContext as any, 3000000);
+    }).toThrow(/Unauthorized manager genesis initialization/i);
   });
 });

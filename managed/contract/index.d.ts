@@ -1,4 +1,4 @@
-import type * as __compactRuntime from '@midnight-ntwrk/compact-runtime';
+﻿import type * as __compactRuntime from '@midnight-ntwrk/compact-runtime';
 
 export enum StateValue {
   vacant = 0,
@@ -8,9 +8,12 @@ export enum StateValue {
 export type Witnesses<T> = {
   investorSecretKey(context: __compactRuntime.WitnessContext<Ledger, T>): [T, Uint8Array];
   financialAuditProofHash(context: __compactRuntime.WitnessContext<Ledger, T>): [T, Uint8Array];
+  cpaIssuerPublicKey(context: __compactRuntime.WitnessContext<Ledger, T>): [T, Uint8Array];
+  cpaAttestationDigest(context: __compactRuntime.WitnessContext<Ledger, T>): [T, Uint8Array];
   netWorthAmount(context: __compactRuntime.WitnessContext<Ledger, T>): [T, number];
   verificationProofNonce(context: __compactRuntime.WitnessContext<Ledger, T>): [T, Uint8Array];
   fundManagerSigningKey(context: __compactRuntime.WitnessContext<Ledger, T>): [T, Uint8Array];
+  managerGenesisSecret(context: __compactRuntime.WitnessContext<Ledger, T>): [T, Uint8Array];
 };
 
 export type ImpureCircuits<T> = {
@@ -20,6 +23,7 @@ export type ImpureCircuits<T> = {
   setFundManagerCommitment(context: __compactRuntime.CircuitContext<T>, newMinimumThreshold: number): __compactRuntime.CircuitResults<T, Uint8Array>;
   resetInvestmentFund(context: __compactRuntime.CircuitContext<T>, newFundId: Uint8Array, newMinimumThreshold: number): __compactRuntime.CircuitResults<T, Uint8Array>;
   incrementSession(context: __compactRuntime.CircuitContext<T>): __compactRuntime.CircuitResults<T, []>;
+  setTrustedCpaAuthority(context: __compactRuntime.CircuitContext<T>, newCpaAuthority: Uint8Array): __compactRuntime.CircuitResults<T, Uint8Array>;
   applyForScholarship(context: __compactRuntime.CircuitContext<T>, expectedFundId: Uint8Array): __compactRuntime.CircuitResults<T, Uint8Array>;
   resetScholarship(context: __compactRuntime.CircuitContext<T>, newFundId: Uint8Array, newMinimumThreshold: number): __compactRuntime.CircuitResults<T, Uint8Array>;
 };
@@ -34,6 +38,7 @@ export type Ledger = {
   readonly activeSession: bigint;
   readonly fundId: Uint8Array;
   readonly fundManagerCommitment: Uint8Array;
+  readonly trustedCpaAuthority: Uint8Array;
   readonly lastVerificationCommitment: Uint8Array;
   readonly lastRevokedCommitment: Uint8Array;
   readonly minimumNetWorthThreshold: number;
@@ -53,5 +58,5 @@ export declare class Contract<T = any, W extends Witnesses<T> = Witnesses<T>> im
   initialState(context: __compactRuntime.ConstructorContext<T>, initialFundId?: Uint8Array, initialThreshold?: number): __compactRuntime.ConstructorResult<T>;
 }
 
-export declare function ledger(state: __compactRuntime.StateValue | __compactRuntime.ChargedState): Ledger;
+export declare function ledger(state: __compactRuntime.StateValue | __compactRuntime.ChargedState | any): Ledger;
 export declare const pureCircuits: PureCircuits;

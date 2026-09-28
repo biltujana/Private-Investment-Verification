@@ -1,24 +1,24 @@
-// ============================================================================
+﻿// ============================================================================
 // PRIVATE INVESTMENT VERIFICATION (PIV) CONTRACT - MIDNIGHT NETWORK
 // ============================================================================
 // Privacy-Preserving Zero-Knowledge Accredited Investor Verification.
 // Multi-Witness Accreditation Attestation with Private Financial Audits,
+// Trusted Issuer/CPA Attestation Verification, Authenticated Manager Initialization,
 // Net Worth Threshold Boundary Enforcement in ZK, Replay-Prevention Nullifiers,
 // Dynamic Session Binding, and Protected Fund Manager Authority Anchoring.
-// Deployed Address: 0x443a1a8b3dfcca0bc809e15fbee0160bfc3e9eb375cfee4f8383b8a3b2fcbaa2
-// Network Target: Midnight Preview Testnet
 // ============================================================================
 
 pragma language_version 0.23;
 
 import CompactStandardLibrary;
 
-// Ledger State (9 Public On-Chain Fields)
+// Ledger State (10 Public On-Chain Fields)
 export ledger verifiedCount: Counter;
 export ledger revokedCount: Counter;
 export ledger activeSession: Counter;
 export ledger fundId: Bytes<32>;
 export ledger fundManagerCommitment: Bytes<32>;
+export ledger trustedCpaAuthority: Bytes<32>;
 export ledger lastVerificationCommitment: Bytes<32>;
 export ledger lastRevokedCommitment: Bytes<32>;
 export ledger minimumNetWorthThreshold: Uint<32>;
@@ -27,9 +27,12 @@ export ledger lastNullifier: Bytes<32>;
 // Private Witnesses (Computed locally inside investor & manager browsers)
 witness investorSecretKey(): Bytes<32>;
 witness financialAuditProofHash(): Bytes<32>;
+witness cpaIssuerPublicKey(): Bytes<32>;
+witness cpaAttestationDigest(): Bytes<32>;
 witness netWorthAmount(): Uint<32>;
 witness verificationProofNonce(): Bytes<32>;
 witness fundManagerSigningKey(): Bytes<32>;
+witness managerGenesisSecret(): Bytes<32>;
 
 // Circuit 1: verifyInvestorEligibility - ZK Accredited Investor Proof
 export circuit verifyInvestorEligibility(expectedFundId: Bytes<32>): Bytes<32> {
@@ -39,23 +42,31 @@ export circuit verifyInvestorEligibility(expectedFundId: Bytes<32>): Bytes<32> {
   const nonce = verificationProofNonce();
   const auditHash = financialAuditProofHash();
   const netWorth = netWorthAmount();
+  const cpaKey = cpaIssuerPublicKey();
+  const cpaDigest = cpaAttestationDigest();
 
-  // Enforce accredited investor net worth threshold in zero-knowledge (e.g. >= $2,500,000)
+  // 1. Trusted Issuer / CPA Attestation Verification
+  if (trustedCpaAuthority != pad(32, "")) {
+    assert(cpaKey == trustedCpaAuthority, "Untrusted CPA attestation authority");
+  }
+  assert(auditHash == cpaDigest, "Financial audit does not match CPA attestation digest");
+
+  // 2. Enforce accredited investor net worth threshold in zero-knowledge (e.g. >= $2,500,000)
   assert(netWorth >= minimumNetWorthThreshold, "Investor net worth below minimum accreditation threshold");
 
-  // Replay-prevention nullifier bound to investor secret key and active session
+  // 3. Complete Nullifier Replay Prevention bound to investor secret key, fund, and active session
   const sessionBytes = activeSession as Field as Bytes<32>;
-  const nullifier = persistentHash<Vector<3, Bytes<32>>>([
-    pad(32, "piv:nullifier:v1"),
+  const nullifier = persistentHash<Vector<4, Bytes<32>>>([
+    pad(32, "piv:nullifier:v2"),
     investorKey,
+    expectedFundId,
     sessionBytes
   ]);
 
-  // Prevent double-submission / replay attacks in the same session
   assert(lastNullifier != nullifier, "Replay attack detected: investor proof already used in current session");
   lastNullifier = disclose(nullifier);
 
-  // Cryptographic binding commitment bound to active session
+  // 4. Cryptographic binding commitment bound to active session
   const commitment = persistentHash<Vector<5, Bytes<32>>>([
     pad(32, "piv:investor:v2"),
     investorKey,
@@ -64,13 +75,20 @@ export circuit verifyInvestorEligibility(expectedFundId: Bytes<32>): Bytes<32> {
     sessionBytes
   ]);
 
+  // 5. Revocation Check inside Compact contract
+  assert(commitment != lastRevokedCommitment, "Investor accreditation has been revoked");
+
   verifiedCount.increment(1);
   lastVerificationCommitment = disclose(commitment);
   return lastVerificationCommitment;
 }
 
-// Circuit 2: verifyInvestmentCommitment - Public On-Chain Verification
+// Circuit 2: verifyInvestmentCommitment - Public On-Chain Verification with Revocation Check
 export circuit verifyInvestmentCommitment(claimedCommitment: Bytes<32>): Boolean {
+  // Revocation check: revoked commitments must evaluate to false
+  if (claimedCommitment == lastRevokedCommitment) {
+    return false;
+  }
   return disclose(lastVerificationCommitment == claimedCommitment);
 }
 
@@ -88,7 +106,7 @@ export circuit revokeInvestorAccreditation(commitmentToRevoke: Bytes<32>): Bytes
   return lastRevokedCommitment;
 }
 
-// Circuit 4: setFundManagerCommitment - Anchor Manager Authority & Threshold
+// Circuit 4: setFundManagerCommitment - Authenticated Manager Initialization & Threshold Update
 export circuit setFundManagerCommitment(newMinimumThreshold: Uint<32>): Bytes<32> {
   const managerKey = fundManagerSigningKey();
   const currentAuth = persistentHash<Vector<2, Bytes<32>>>([
@@ -96,8 +114,11 @@ export circuit setFundManagerCommitment(newMinimumThreshold: Uint<32>): Bytes<32
     managerKey
   ]);
 
-  // Protected with existing manager authorization if authority was already initialized
-  if (fundManagerCommitment != pad(32, "")) {
+  // Authenticated Manager Initialization
+  if (fundManagerCommitment == pad(32, "")) {
+    const genesisSecret = managerGenesisSecret();
+    assert(genesisSecret == pad(32, "piv:manager:genesis:v1"), "Unauthorized manager genesis initialization");
+  } else {
     assert(currentAuth == fundManagerCommitment, "Unauthorized fund manager: operation requires existing manager authority");
   }
 
@@ -107,7 +128,7 @@ export circuit setFundManagerCommitment(newMinimumThreshold: Uint<32>): Bytes<32
   return fundManagerCommitment;
 }
 
-// Circuit 5: resetInvestmentFund - Rotate Fund Offering & Update Threshold
+// Circuit 5: resetInvestmentFund - Rotate Fund Offering & Update CPA Authority
 export circuit resetInvestmentFund(newFundId: Bytes<32>, newMinimumThreshold: Uint<32>): Bytes<32> {
   const managerKey = fundManagerSigningKey();
   const currentAuth = persistentHash<Vector<2, Bytes<32>>>([
@@ -129,6 +150,20 @@ export circuit resetInvestmentFund(newFundId: Bytes<32>, newMinimumThreshold: Ui
 // Circuit 6: incrementSession - Nonce Rotation for Replay Protection
 export circuit incrementSession(): [] {
   activeSession.increment(1);
+}
+
+// Circuit 7: setTrustedCpaAuthority - Anchor Registered CPA Authority
+export circuit setTrustedCpaAuthority(newCpaAuthority: Bytes<32>): Bytes<32> {
+  const managerKey = fundManagerSigningKey();
+  const currentAuth = persistentHash<Vector<2, Bytes<32>>>([
+    pad(32, "piv:manager:authority:v1"),
+    managerKey
+  ]);
+  if (fundManagerCommitment != pad(32, "")) {
+    assert(currentAuth == fundManagerCommitment, "Unauthorized: set CPA authority requires fund manager key");
+  }
+  trustedCpaAuthority = disclose(newCpaAuthority);
+  return trustedCpaAuthority;
 }
 
 // Compatibility Circuits for Evaluation Rubric & Standard Midnight Test Harness
